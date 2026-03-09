@@ -1,1 +1,1 @@
-# graph-plagiarism-detector
+#Plagiarism detector using  nlp and grapg theory
