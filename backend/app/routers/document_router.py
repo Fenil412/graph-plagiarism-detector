@@ -9,12 +9,13 @@ Document management endpoints:
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, UploadFile, File, BackgroundTasks, status
+from fastapi import APIRouter, Depends, Request, UploadFile, File, BackgroundTasks, status
+from pydantic import UUID4
 from prisma import Prisma
 
 from app.schemas import DocumentResponse, DocumentListResponse
 from app.services import upload_document, get_user_documents, get_document_by_id, delete_document
-from app.utils.dependencies import get_current_user_id
+from app.utils.dependencies import get_current_user_id, rate_limit_dependency
 from app.prisma.client import get_db
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -29,6 +30,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 async def upload(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="PDF, TXT or DOCX file"),
+    request: Request = Depends(rate_limit_dependency),
     user_id: str = Depends(get_current_user_id),
     db: Prisma = Depends(get_db),
 ):
@@ -58,11 +60,11 @@ async def list_documents(
     summary="Get a specific document",
 )
 async def get_document(
-    document_id: str,
+    document_id: UUID4,
     user_id: str = Depends(get_current_user_id),
     db: Prisma = Depends(get_db),
 ):
-    return await get_document_by_id(document_id, user_id, db)
+    return await get_document_by_id(str(document_id), user_id, db)
 
 
 @router.delete(
@@ -71,8 +73,8 @@ async def get_document(
     summary="Delete a document",
 )
 async def delete(
-    document_id: str,
+    document_id: UUID4,
     user_id: str = Depends(get_current_user_id),
     db: Prisma = Depends(get_db),
 ):
-    return await delete_document(document_id, user_id, db)
+    return await delete_document(str(document_id), user_id, db)

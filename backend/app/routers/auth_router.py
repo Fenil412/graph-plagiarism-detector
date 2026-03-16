@@ -8,12 +8,12 @@ Authentication endpoints:
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from prisma import Prisma
 
 from app.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, UserResponse
 from app.services import register_user, login_user, get_user_by_id
-from app.utils.dependencies import get_current_user_id
+from app.utils.dependencies import get_current_user_id, rate_limit_dependency
 from app.prisma.client import get_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -27,6 +27,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 )
 async def register(
     payload: UserRegisterRequest,
+    request: Request = Depends(rate_limit_dependency),
     db: Prisma = Depends(get_db),
 ):
     """
@@ -46,6 +47,7 @@ async def register(
 )
 async def login(
     payload: UserLoginRequest,
+    request: Request = Depends(rate_limit_dependency),
     db: Prisma = Depends(get_db),
 ):
     """Authenticate and receive a Bearer JWT token."""

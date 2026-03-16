@@ -9,6 +9,7 @@ Plagiarism detection endpoints:
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from pydantic import UUID4
 from prisma import Prisma
 
 from app.schemas import CompareDocumentsRequest, PlagiarismSummary, ReportResponse
@@ -49,12 +50,12 @@ async def compare(
     summary="Retrieve a detailed plagiarism report",
 )
 async def report(
-    comparison_id: str,
+    comparison_id: UUID4,
     user_id: str = Depends(get_current_user_id),
     db: Prisma = Depends(get_db),
 ):
     """Fetch the full detailed report for a previous comparison."""
-    return await get_report(comparison_id, user_id, db)
+    return await get_report(str(comparison_id), user_id, db)
 
 
 @router.get(

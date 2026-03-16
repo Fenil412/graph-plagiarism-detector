@@ -8,6 +8,7 @@ Graph generation and retrieval endpoints:
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from pydantic import UUID4
 from prisma import Prisma
 
 from app.schemas import GraphResponse, GraphGenerateRequest
@@ -49,9 +50,9 @@ async def generate(
     summary="Get the stored graph for a document",
 )
 async def get(
-    document_id: str,
+    document_id: UUID4,
     user_id: str = Depends(get_current_user_id),
     db: Prisma = Depends(get_db),
 ):
     """Retrieve the pre-built graph for the specified document."""
-    return await get_graph(document_id, user_id, db)
+    return await get_graph(str(document_id), user_id, db)

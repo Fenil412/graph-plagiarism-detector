@@ -12,15 +12,13 @@ from app.graph_engine import build_word_graph, graph_to_dict, graph_metadata
 from app.config.logger import logger
 
 
-async def build_graph_task(document_id: str, text: str) -> None:
+async def build_graph_task(db: Prisma, document_id: str, text: str) -> None:
     """
     Called by FastAPI BackgroundTasks after a document is uploaded.
     1. Builds a word co-occurrence graph
     2. Persists the graph to the database
     3. Marks the document status as READY (or ERROR on failure)
     """
-    db = Prisma()
-    await db.connect()
     try:
         logger.info(f"[BG] Building graph for document {document_id}")
 
@@ -69,5 +67,3 @@ async def build_graph_task(document_id: str, text: str) -> None:
             where={"id": document_id},
             data={"status": "ERROR"},
         )
-    finally:
-        await db.disconnect()
