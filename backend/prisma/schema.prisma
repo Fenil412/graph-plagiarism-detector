@@ -1,0 +1,127 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  Prisma Schema — Graph-Based Plagiarism Detection System
+//  Database: PostgreSQL (Neon Cloud)
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+model User {
+  id            String       @id @default(cuid())
+  name          String
+  email         String       @unique
+  password_hash String
+  is_active     Boolean      @default(true)
+  role          Role         @default(USER)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+
+  // Relations
+  documents     Document[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+model Document {
+  id           String   @id @default(cuid())
+  user_id      String
+  file_name    String
+  original_name String
+  mime_type    String
+  file_size    Int
+  content      String   @db.Text
+  word_count   Int      @default(0)
+  status       DocStatus @default(PENDING)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  graph        Graph?
+
+  comparisons_as_a  Comparison[] @relation("DocumentA")
+  comparisons_as_b  Comparison[] @relation("DocumentB")
+
+  @@map("documents")
+}
+
+enum DocStatus {
+  PENDING        // Uploaded, not processed yet
+  PROCESSING     // Graph being built
+  READY          // Graph built and ready for comparison
+  ERROR          // Processing failed
+}
+
+// ── Graphs ───────────────────────────────────────────────────────────────────
+model Graph {
+  id          String   @id @default(cuid())
+  document_id String   @unique
+  node_count  Int      @default(0)
+  edge_count  Int      @default(0)
+  // JSON-serialized graph data (NetworkX node-link format)
+  nodes       Json
+  edges       Json
+  metadata    Json?    // Extra stats: density, diameter, etc.
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  document    Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@map("graphs")
+}
+
+// ── Comparisons ───────────────────────────────────────────────────────────────
+model Comparison {
+  id                   String   @id @default(cuid())
+  document_a_id        String
+  document_b_id        String
+  similarity_score     Float    @default(0)   // 0.0 – 1.0
+  plagiarism_percentage Float   @default(0)   // 0.0 – 100.0
+  algorithm_used       String   @default("node_overlap")
+  status               CompStatus @default(PENDING)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  document_a  Document @relation("DocumentA", fields: [document_a_id], references: [id], onDelete: Cascade)
+  document_b  Document @relation("DocumentB", fields: [document_b_id], references: [id], onDelete: Cascade)
+  report      Report?
+
+  @@map("comparisons")
+}
+
+enum CompStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+model Report {
+  id            String   @id @default(cuid())
+  comparison_id String   @unique
+  report_data   Json     // Detailed breakdown: matching nodes, edges, sentences
+  generated_at  DateTime @default(now())
+
+  // Relations
+  comparison    Comparison @relation(fields: [comparison_id], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
