@@ -35,13 +35,6 @@ async def save_upload_file(file: UploadFile) -> tuple[str, str]:
     stored_name = f"{uuid.uuid4()}.{ext}"
     dest = os.path.join(settings.FILE_UPLOAD_PATH, stored_name)
 
-    # Check file size before reading to prevent memory exhaustion
-    if file.size and file.size > settings.max_file_size_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File exceeds the {settings.MAX_FILE_SIZE_MB} MB limit.",
-        )
-
     content = await file.read()
     if len(content) > settings.max_file_size_bytes:
         raise HTTPException(

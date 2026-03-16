@@ -1,0 +1,14 @@
+.toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+.searchWrap { position: relative; flex: 1; max-width: 400px; }
+.searchIcon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.count { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
+.list { display: flex; flex-direction: column; gap: 0.5rem; }
+.row { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.1rem; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); transition: all var(--transition-fast); }
+.row:hover { border-color: var(--border-default); }
+.rowIcon { width: 36px; height: 36px; border-radius: 9px; background: rgba(124,58,237,0.1); display: flex; align-items: center; justify-content: center; color: #a78bfa; flex-shrink: 0; }
+.rowInfo { flex: 1; min-width: 0; }
+.rowName { font-size: 0.87rem; font-weight: 600; color: var(--text-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowMeta { font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.3rem; margin-top: 2px; }
+.deleteBtn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; transition: all var(--transition-fast); flex-shrink: 0; }
+.deleteBtn:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; background: var(--bg-elevated); border: 1px dashed var(--border-default); border-radius: var(--radius-lg); color: var(--text-muted); text-align: center; }

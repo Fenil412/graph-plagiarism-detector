@@ -45,7 +45,7 @@ async def upload_document(
 
     # Queue background graph construction
     from app.background_tasks.graph_tasks import build_graph_task
-    background_tasks.add_task(build_graph_task, db, doc.id, text)
+    background_tasks.add_task(build_graph_task, doc.id, text)
 
     return _to_response(doc)
 

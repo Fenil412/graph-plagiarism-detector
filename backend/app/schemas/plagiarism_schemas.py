@@ -3,23 +3,15 @@ app/schemas/plagiarism_schemas.py  —  Pydantic v2 schemas for Plagiarism endpo
 """
 from __future__ import annotations
 from datetime import datetime
-from enum import Enum
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-
-
-class Algorithm(str, Enum):
-    NODE_OVERLAP = "node_overlap"
-    EDGE_SIMILARITY = "edge_similarity"
-    SUBGRAPH = "subgraph"
-    GRAPH_EDIT_DISTANCE = "graph_edit_distance"
 
 
 class CompareDocumentsRequest(BaseModel):
     document_a_id: str
     document_b_id: str
-    algorithm: Algorithm = Field(
-        default=Algorithm.NODE_OVERLAP,
+    algorithm: str = Field(
+        default="node_overlap",
         description="node_overlap | edge_similarity | graph_edit_distance | subgraph",
     )
 
