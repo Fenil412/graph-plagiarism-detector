@@ -25,7 +25,8 @@ import {
 } from 'chart.js'
 import { Line, Doughnut, Bar, PolarArea } from 'react-chartjs-2'
 import ForceGraph3D from 'react-force-graph-3d'
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import * as THREE from 'three'
 
 ChartJS.register(
   CategoryScale,
@@ -67,23 +68,57 @@ function processStatusData(docs) {
   return counts
 }
 
-// Generate a stunning 3D complex graph
+// Generate a 3D graph with named/labeled nodes and visible edges
 function generateToughGraph() {
-  const N = 120;
-  const nodes = [...Array(N).keys()].map(i => ({ id: i, group: i % 5, val: (i % 3) + 1 }));
-  const links = [];
+  const groups = [
+    { name: 'Lexical', color: '#7c3aed' },
+    { name: 'Semantic', color: '#06b6d4' },
+    { name: 'Syntactic', color: '#10b981' },
+    { name: 'Structural', color: '#f59e0b' },
+    { name: 'Statistical', color: '#ef4444' },
+  ]
+  const sampleLabels = [
+    ['word', 'token', 'lemma', 'stem', 'n-gram', 'bigram', 'trigram', 'char', 'prefix', 'suffix', 'phrase', 'collocation','frequency','TF-IDF','vocabulary','dictionary','corpus','stopword','punctuation','morpheme','inflection','derivation','compound','abbreviation'],
+    ['meaning','concept','context','synonym','antonym','hypernym','hyponym','meronym','holonym','polysemy','homonym','metaphor','analogy','inference','entailment','paraphrase','coreference','disambiguation','categorization','taxonomy','ontology','embedding','vector','similarity'],
+    ['parse','clause','modifier','subject','predicate','object','complement','adjunct','dependency','constituent','head','POS','tag','verb','noun','adjective','adverb','preposition','conjunction','determiner','pronoun','tense','aspect','mood'],
+    ['paragraph','section','chapter','heading','title','abstract','introduction','conclusion','citation','reference','footnote','appendix','figure','table','caption','index','outline','summary','layout','format','template','scheme','pattern','hierarchy'],
+    ['mean','median','mode','variance','deviation','distribution','correlation','regression','percentile','frequency','probability','hypothesis','confidence','interval','sample','population','outlier','normal','skew','kurtosis','entropy','divergence','mutual','information'],
+  ]
+
+  const N = 80
+  const nodes = []
   for (let i = 0; i < N; i++) {
-    // connect to 3-4 random other nodes to create a dense hairball
-    const edges = 2 + Math.random() * 3;
-    for (let j = 0; j < edges; j++) {
-      links.push({
-        source: i,
-        target: Math.floor(Math.random() * N),
-        value: Math.random()
-      });
+    const g = i % 5
+    const labelIdx = Math.floor(i / 5) % sampleLabels[g].length
+    nodes.push({
+      id: i,
+      name: sampleLabels[g][labelIdx],
+      group: g,
+      groupName: groups[g].name,
+      color: groups[g].color,
+      val: 1 + Math.random() * 3,
+    })
+  }
+
+  const links = []
+  // Intra-group connections (dense)
+  for (let i = 0; i < N; i++) {
+    const sameGroup = nodes.filter(n => n.group === nodes[i].group && n.id !== i)
+    const edgeCount = 1 + Math.floor(Math.random() * 2)
+    for (let j = 0; j < edgeCount && j < sameGroup.length; j++) {
+      const target = sameGroup[Math.floor(Math.random() * sameGroup.length)]
+      links.push({ source: i, target: target.id, value: 0.5 + Math.random() * 0.5 })
     }
   }
-  return { nodes, links };
+  // Inter-group connections (sparse)
+  for (let i = 0; i < 30; i++) {
+    const a = Math.floor(Math.random() * N)
+    let b = Math.floor(Math.random() * N)
+    while (nodes[b].group === nodes[a].group) b = Math.floor(Math.random() * N)
+    links.push({ source: a, target: b, value: 0.2 + Math.random() * 0.3 })
+  }
+
+  return { nodes, links }
 }
 
 export default function Dashboard() {
@@ -110,8 +145,8 @@ export default function Dashboard() {
       interval = setInterval(() => {
         if (!graphRef.current) return;
         graphRef.current.cameraPosition({
-          x: 400 * Math.sin(angle),
-          z: 400 * Math.cos(angle)
+          x: 350 * Math.sin(angle),
+          z: 350 * Math.cos(angle)
         });
         angle += Math.PI / 450;
       }, 30);
@@ -119,6 +154,55 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [graphRef.current]);
 
+  // Custom 3D node renderer with text labels
+  const nodeThreeObject = useCallback((node) => {
+    const group = new THREE.Group()
+
+    // Sphere
+    const geometry = new THREE.SphereGeometry(node.val * 1.5, 16, 16)
+    const material = new THREE.MeshPhongMaterial({
+      color: node.color,
+      emissive: node.color,
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.9,
+    })
+    const sphere = new THREE.Mesh(geometry, material)
+    group.add(sphere)
+
+    // Text label using canvas sprite
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    canvas.width = 256
+    canvas.height = 64
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Background pill
+    ctx.fillStyle = 'rgba(10, 12, 20, 0.8)'
+    const text = node.name || `Node ${node.id}`
+    ctx.font = 'bold 28px Inter, Arial, sans-serif'
+    const textW = ctx.measureText(text).width
+    const pillW = Math.min(textW + 24, 250)
+    const pillX = (256 - pillW) / 2
+    ctx.beginPath()
+    ctx.roundRect(pillX, 8, pillW, 46, 12)
+    ctx.fill()
+
+    // Text
+    ctx.fillStyle = node.color
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, 128, 32)
+
+    const texture = new THREE.CanvasTexture(canvas)
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false })
+    const sprite = new THREE.Sprite(spriteMaterial)
+    sprite.scale.set(20, 5, 1)
+    sprite.position.set(0, node.val * 2 + 3, 0)
+    group.add(sprite)
+
+    return group
+  }, [])
 
   const docs  = data?.documents || []
   const history = historyData || []
@@ -134,50 +218,74 @@ export default function Dashboard() {
   const activity = processActivityData(docs)
   const statusCounts = processStatusData(docs)
 
-  // Algorithm usage counts
-  const algoCounts = { node_overlap: 0, edge_similarity: 0, subgraph: 0 }
+  // Check if we have minimal real data — if not, use richer dummy data
+  const hasEnoughActivity = activity.labels.length >= 3
+  const hasEnoughStatuses = (statusCounts.READY + statusCounts.PENDING + statusCounts.PROCESSING + statusCounts.ERROR) >= 3
+
+  // Algorithm usage counts — include graph_edit_distance
+  const algoCounts = { node_overlap: 0, edge_similarity: 0, subgraph: 0, graph_edit_distance: 0 }
   history.forEach(h => {
     if(algoCounts[h.algorithm_used] !== undefined) algoCounts[h.algorithm_used]++
   })
+  const hasEnoughAlgo = Object.values(algoCounts).some(v => v > 0)
+
+  // Dummy fallback data for Activity Over Time
+  const dummyActivityLabels = ['Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16', 'Mar 17']
+  const dummyActivityData = [3, 5, 2, 8, 6, 12, 7]
 
   // Chartjs Configs
   const lineChartData = {
-    labels: activity.labels.length ? activity.labels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: hasEnoughActivity ? activity.labels : dummyActivityLabels,
     datasets: [
       {
         label: 'Uploads',
-        data: activity.data.length ? activity.data : [1, 3, 2, 5, 4, 8, 6],
+        data: hasEnoughActivity ? activity.data : dummyActivityData,
         borderColor: '#7c3aed',
         backgroundColor: 'rgba(124, 58, 237, 0.1)',
         tension: 0.4,
         fill: true,
         pointBackgroundColor: '#06b6d4',
-        borderWidth: 2,
+        pointBorderColor: '#7c3aed',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2.5,
       }
     ]
   }
 
   const polarData = {
-    labels: ['Node Overlap', 'Edge Sim', 'Subgraph'],
+    labels: ['Node Overlap', 'Edge Similarity', 'Subgraph', 'Graph Edit Distance'],
     datasets: [{
-      data: [algoCounts.node_overlap || 10, algoCounts.edge_similarity || 6, algoCounts.subgraph || 3],
+      data: hasEnoughAlgo
+        ? [algoCounts.node_overlap, algoCounts.edge_similarity, algoCounts.subgraph, algoCounts.graph_edit_distance]
+        : [14, 9, 6, 4],
       backgroundColor: [
         'rgba(124, 58, 237, 0.7)',
         'rgba(6, 182, 212, 0.7)',
-        'rgba(245, 158, 11, 0.7)'
+        'rgba(245, 158, 11, 0.7)',
+        'rgba(239, 68, 68, 0.7)',
       ],
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.1)'
     }]
   }
 
+  // Dummy status data when only one status has items
   const doughnutData = {
     labels: ['Ready', 'Pending', 'Processing', 'Error'],
     datasets: [{
-      data: [statusCounts.READY, statusCounts.PENDING, statusCounts.PROCESSING, statusCounts.ERROR],
+      data: hasEnoughStatuses
+        ? [statusCounts.READY, statusCounts.PENDING, statusCounts.PROCESSING, statusCounts.ERROR]
+        : [
+            statusCounts.READY || 8,
+            statusCounts.PENDING || 3,
+            statusCounts.PROCESSING || 2,
+            statusCounts.ERROR || 1,
+          ],
       backgroundColor: ['#10b981', '#f59e0b', '#06b6d4', '#ef4444'],
       borderWidth: 0,
-      hoverOffset: 4
+      hoverOffset: 6
     }]
   }
 
@@ -197,17 +305,22 @@ export default function Dashboard() {
       }
     },
     scales: {
-      y: { display: false },
-      x: { grid: { display: false }, ticks: { color: '#64748b' } }
+      y: {
+        display: true,
+        grid: { color: 'rgba(148, 163, 184, 0.06)' },
+        ticks: { color: '#64748b', font: { size: 11 } },
+        beginAtZero: true,
+      },
+      x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } }
     }
   }
 
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '75%',
+    cutout: '70%',
     plugins: {
-      legend: { position: 'right', labels: { color: '#94a3b8', usePointStyle: true, padding: 20 } },
+      legend: { position: 'right', labels: { color: '#94a3b8', usePointStyle: true, padding: 16, font: { size: 12 } } },
     }
   }
 
@@ -221,7 +334,7 @@ export default function Dashboard() {
       }
     },
     plugins: {
-      legend: { position: 'right', labels: { color: '#94a3b8', usePointStyle: true } },
+      legend: { position: 'right', labels: { color: '#94a3b8', usePointStyle: true, font: { size: 11 } } },
     }
   }
 
@@ -310,22 +423,36 @@ export default function Dashboard() {
              Algorithm Mapping Topology (Live Engine Preview)
            </h3>
            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', zIndex: 10, position: 'relative' }}>
-             Interactive 3D representation of lexical connections detected by our plagiarism engine algorithm. Feel free to drag to rotate or zoom.
+             Interactive 3D representation of lexical connections detected by our plagiarism engine algorithm. Nodes are colored by category. Drag to rotate, scroll to zoom.
            </p>
            
+           {/* Legend */}
+           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', zIndex: 10, position: 'relative' }}>
+             {['Lexical', 'Semantic', 'Syntactic', 'Structural', 'Statistical'].map((name, i) => (
+               <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: ['#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444'][i] }}/>
+                 {name}
+               </div>
+             ))}
+           </div>
+
            <div style={{ width: '100%', height: '400px', background: '#090a0f', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
               <ForceGraph3D
                 ref={graphRef}
                 graphData={graphData}
-                nodeAutoColorBy="group"
-                nodeRelSize={4}
-                linkWidth={0.5}
-                linkColor={() => 'rgba(124, 58, 237, 0.25)'}
+                nodeThreeObject={nodeThreeObject}
+                nodeThreeObjectExtend={false}
+                nodeRelSize={3}
+                linkWidth={1.2}
+                linkOpacity={0.4}
+                linkColor={link => {
+                  const src = graphData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))
+                  return src ? src.color + '88' : 'rgba(124, 58, 237, 0.35)'
+                }}
                 backgroundColor="#090a0f"
                 showNavInfo={false}
-                width={document.body.clientWidth - (document.body.clientWidth > 768 ? 320 : 64)} // Rough estimate to keep it responsive-ish, css usually better but forcegraph needs px
+                width={document.body.clientWidth - (document.body.clientWidth > 768 ? 320 : 64)}
                 height={400}
-                nodeOpacity={0.9}
               />
            </div>
         </motion.div>
