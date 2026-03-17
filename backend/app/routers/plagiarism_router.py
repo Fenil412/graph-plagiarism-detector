@@ -11,8 +11,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from prisma import Prisma
 
-from app.schemas import CompareDocumentsRequest, PlagiarismSummary, ReportResponse
-from app.services import compare_documents, get_report
+from app.schemas import CompareDocumentsRequest, PlagiarismSummary, ReportResponse, ComparisonResponse
+from app.services import compare_documents, get_report, get_history
 from app.plagiarism_engine import SUPPORTED_ALGORITHMS
 from app.utils.dependencies import get_current_user_id
 from app.prisma.client import get_db
@@ -55,6 +55,19 @@ async def report(
 ):
     """Fetch the full detailed report for a previous comparison."""
     return await get_report(comparison_id, user_id, db)
+
+
+@router.get(
+    "/history",
+    response_model=list[ComparisonResponse],
+    summary="Get all comparisons for the current user",
+)
+async def history(
+    user_id: str = Depends(get_current_user_id),
+    db: Prisma = Depends(get_db),
+):
+    """Fetch all history or recent comparisons for a user."""
+    return await get_history(user_id, db)
 
 
 @router.get(

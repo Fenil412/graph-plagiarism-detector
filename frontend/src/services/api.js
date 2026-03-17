@@ -59,6 +59,7 @@ export const plagiarismAPI = {
   compare: (document_a_id, document_b_id, algorithm = 'node_overlap') =>
     api.post('/plagiarism/compare', { document_a_id, document_b_id, algorithm }),
   report:     comparison_id => api.get(`/plagiarism/report/${comparison_id}`),
+  history:    ()            => api.get('/plagiarism/history'),
   algorithms: ()            => api.get('/plagiarism/algorithms'),
 }
 

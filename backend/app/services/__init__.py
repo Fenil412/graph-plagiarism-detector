@@ -6,11 +6,11 @@ from app.services.document_service import (
     delete_document,
 )
 from app.services.graph_service import generate_graph, get_graph
-from app.services.plagiarism_service import compare_documents, get_report
+from app.services.plagiarism_service import compare_documents, get_report, get_history
 
 __all__ = [
     "register_user", "login_user", "get_user_by_id",
     "upload_document", "get_user_documents", "get_document_by_id", "delete_document",
     "generate_graph", "get_graph",
-    "compare_documents", "get_report",
+    "compare_documents", "get_report", "get_history"
 ]

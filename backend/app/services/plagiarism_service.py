@@ -10,7 +10,7 @@ Orchestrates plagiarism comparison between two documents:
 from __future__ import annotations
 
 from fastapi import HTTPException
-from prisma import Prisma
+from prisma import Prisma, Json
 
 from app.plagiarism_engine import detect_plagiarism, SUPPORTED_ALGORITHMS
 from app.schemas import CompareDocumentsRequest, ComparisonResponse, ReportResponse, PlagiarismSummary
@@ -103,7 +103,7 @@ async def compare_documents(
         report = await db.report.create(
             data={
                 "comparison_id": comparison.id,
-                "report_data":   report_data,
+                "report_data":   Json(report_data),
             }
         )
 
@@ -144,6 +144,23 @@ async def get_report(comparison_id: str, user_id: str, db: Prisma) -> ReportResp
         raise HTTPException(status_code=404, detail="Report not generated yet.")
 
     return _to_report(report)
+
+
+async def get_history(user_id: str, db: Prisma) -> list[ComparisonResponse]:
+    # Prisma Python doesn't support `select` dynamically here so we fetch docs and extract ids.
+    docs = await db.document.find_many(where={"user_id": user_id})
+    doc_ids = [d.id for d in docs]
+
+    if not doc_ids:
+        return []
+
+    comparisons = await db.comparison.find_many(
+        where={
+            "document_a_id": {"in": doc_ids}
+        },
+        order={"created_at": "desc"}
+    )
+    return [_to_comparison(c) for c in comparisons]
 
 
 def _to_comparison(c) -> ComparisonResponse:
