@@ -22,6 +22,7 @@ async def build_graph_task(document_id: str, text: str) -> None:
     db = Prisma()
     await db.connect()
     try:
+        from prisma import Json
         logger.info(f"[BG] Building graph for document {document_id}")
 
         G    = build_word_graph(text)
@@ -34,22 +35,22 @@ async def build_graph_task(document_id: str, text: str) -> None:
             await db.graph.update(
                 where={"document_id": document_id},
                 data={
-                    "nodes":      data["nodes"],
-                    "edges":      data["edges"],
+                    "nodes":      Json(data["nodes"]),
+                    "edges":      Json(data["edges"]),
                     "node_count": meta["node_count"],
                     "edge_count": meta["edge_count"],
-                    "metadata":   meta,
+                    "metadata":   Json(meta),
                 },
             )
         else:
             await db.graph.create(
                 data={
-                    "document_id": document_id,
-                    "nodes":       data["nodes"],
-                    "edges":       data["edges"],
+                    "document":    {"connect": {"id": document_id}},
+                    "nodes":       Json(data["nodes"]),
+                    "edges":       Json(data["edges"]),
                     "node_count":  meta["node_count"],
                     "edge_count":  meta["edge_count"],
-                    "metadata":    meta,
+                    "metadata":    Json(meta),
                 }
             )
 
