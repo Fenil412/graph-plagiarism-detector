@@ -38,8 +38,11 @@ async def lifespan(app: FastAPI):
     # ── Startup ───────────────────────────────────────────────────────────────
     configure_logger()
     logger.info(f"🚀  {settings.APP_NAME} starting [{settings.APP_ENV}]")
-    await connect_db()
-    logger.info("✅  Database connected (Prisma + Neon PostgreSQL)")
+    try:
+        await connect_db()
+    except Exception as exc:
+        logger.error(f"⚠️  Database connection failed on startup: {exc}")
+        logger.info("ℹ️  Server will start anyway — DB will reconnect on first request.")
     yield
     # ── Shutdown ──────────────────────────────────────────────────────────────
     await disconnect_db()
@@ -59,7 +62,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
+# ── Middleware (order matters — last added = outermost, runs first) ────────────
+# Inner middleware first:
+app.add_middleware(GlobalErrorMiddleware)
+app.add_middleware(LoggingMiddleware)
+
+# CORS must be outermost so ALL responses (including errors) get CORS headers:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -67,10 +75,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ── Custom middleware (order matters — outermost runs first) ──────────────────
-app.add_middleware(GlobalErrorMiddleware)
-app.add_middleware(LoggingMiddleware)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 BASE = f"/api/{settings.API_VERSION}"

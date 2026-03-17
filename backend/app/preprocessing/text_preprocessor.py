@@ -28,14 +28,26 @@ _NLTK_RESOURCES = [
 ]
 
 def _ensure_nltk_resources() -> None:
+    import os
+    import shutil
+
     for path, package in _NLTK_RESOURCES:
         try:
             nltk.data.find(path)
         except LookupError:
             logger.info(f"Downloading NLTK resource: {package}")
             nltk.download(package, quiet=True)
+        except OSError:
+            # Resource directory exists but is corrupt/incomplete — clean up first
+            logger.warning(f"NLTK resource {package} is corrupt. Re-downloading...")
+            for search_path in nltk.data.path:
+                full = os.path.join(search_path, path)
+                if os.path.exists(full):
+                    shutil.rmtree(full, ignore_errors=True)
+            nltk.download(package, quiet=True)
 
 _ensure_nltk_resources()
+
 
 # ── Module-level singletons ───────────────────────────────────────────────────
 _STOP_WORDS: set[str] = set(stopwords.words("english"))
