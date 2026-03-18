@@ -1,16 +1,56 @@
-# React + Vite
+# 🎨 Graph Plagiarism Detector — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A visually stunning, interactive frontend designed to work with the Graph Plagiarism Detector backend. Built with React and Vite, it emphasizes a modern, dynamic UI with complex data visualization capabilities.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Features
 
-## React Compiler
+- **Modern Glassmorphism UI**: Beautifully designed following modern UX standards.
+- **Dark/Light Mode Persistence**: Built-in theme switcher preserving user choices.
+- **Dashboard Analytics**: Overview metrics showing user activity, recent algorithms, and top documents.
+- **Graph Visualization**: High-performance 3D/2D node-link graph rendering.
+- **Side-by-Side Comparison**: Intuitive document overlap visualization with highlighting.
+- **Secure Authentication**: JWT-based login/register flow with protected routes.
+- **Responsive Navigation**: Sidebar navigation optimizing workspace size on desktops.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Technology Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Role | Technology |
+|---|---|
+| **Framework** | React 18 + Vite |
+| **Routing** | React Router |
+| **State Management** | Zustand |
+| **Data Fetching** | React Query / Axios |
+| **Styling** | Tailwind CSS / Framer Motion |
+| **Icons** | Lucide React |
+| **Visualization** | Three.js / React-Force-Graph / Chart.js |
+
+---
+
+## 🚀 Quick Setup
+
+### 1. Requirements
+Ensure **Node.js** (v18+) and **npm/yarn** are installed.
+
+### 2. Installation
+```bash
+cd frontend
+npm install
+# Note: Use npm install --legacy-peer-deps if dependency resolution conflicts arise.
+```
+
+### 3. Environment Variables
+Create a `.env` file in the `frontend` folder to point the application to the FastAPI server:
+```properties
+VITE_API_URL=http://localhost:8000/api/v1
+```
+
+### 4. Running the Dev Server
+```bash
+npm run dev
+```
+
+The application will be accessible at `http://localhost:5173`.
