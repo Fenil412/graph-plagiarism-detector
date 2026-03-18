@@ -38,7 +38,7 @@
 .vsBadge { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg,var(--accent-primary),var(--accent-secondary)); display: flex; align-items: center; justify-content: center; color: #fff; }
 
 /* ── Algorithm buttons ── */
-.algoSection { }
+.algoSection { display: flex; flex-direction: column; gap: 0.4rem; }
 .algoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .algoBtn { padding: 0.5rem 0.75rem; border-radius: var(--radius-md); background: var(--bg-overlay); border: 1px solid var(--border-default); color: var(--text-secondary); font-size: 0.78rem; font-family: var(--font-mono); cursor: pointer; transition: all var(--transition-fast); }
 .algoBtn:hover { border-color: var(--border-strong); color: var(--text-primary); }
@@ -277,3 +277,199 @@
   pointer-events: none;
   z-index: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SMART HIGHLIGHTING — Side-by-Side View
+   ══════════════════════════════════════════════════════════════════════════════ */
+.hlGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 900px) { .hlGrid { grid-template-columns: 1fr; } }
+
+.hlPanel {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.hlHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-overlay);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hlCount {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.hlBody {
+  max-height: 400px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding: 0.5rem;
+}
+.hlBody::-webkit-scrollbar { width: 4px; }
+.hlBody::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
+
+.hlSentence {
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.35rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  border-left: 3px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  transition: background 0.15s;
+  position: relative;
+}
+.hlSentence:hover {
+  background: var(--bg-hover);
+}
+
+.hlIndex {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  min-width: 24px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.hlBadge {
+  font-size: 0.62rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FOCUSED NODE INFO OVERLAY
+   ══════════════════════════════════════════════════════════════════════════════ */
+.nodeOverlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  background: rgba(10, 12, 20, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 20;
+  pointer-events: all;
+}
+
+.nodeOverlayDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.nodeOverlayInfo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.nodeOverlayName {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nodeOverlayBadge {
+  font-size: 0.62rem;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.nodeOverlayPin {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.nodeOverlayMeta {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.nodeOverlayActions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.nodeOverlayBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 6px;
+  color: #94a3b8;
+  padding: 3px 7px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition: all 0.15s;
+}
+.nodeOverlayBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+/* ── Interaction hint ── */
+.graphHint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.3s;
+}
+.graphBody:hover .graphHint {
+  opacity: 0.8;
+}
+
+

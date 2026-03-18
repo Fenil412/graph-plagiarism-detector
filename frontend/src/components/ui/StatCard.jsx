@@ -1,25 +1,29 @@
-import { motion } from 'framer-motion'
-import styles from './StatCard.module.css'
+export default function StatCard({ title, value, icon: Icon, color, trend }) {
+  const isPositive = trend > 0
+  const isNegative = trend < 0
 
-export default function StatCard({ icon: Icon, label, value, color = '#7c3aed', delta }) {
   return (
-    <motion.div
-      className={styles.card}
-      whileHover={{ y: -4, scale: 1.01 }}
-      transition={{ type: 'spring', stiffness: 300 }}
-    >
-      <div className={styles.iconWrap} style={{ '--card-color': color }}>
+    <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-2xl p-5 flex items-start gap-4 transition-all duration-250 hover:border-[var(--border-default)] hover:shadow-lg hover:shadow-[rgba(124,58,237,0.12)]">
+      <div 
+        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
+      >
         <Icon size={22} />
       </div>
-      <div className={styles.body}>
-        <span className={styles.label}>{label}</span>
-        <span className={styles.value}>{value}</span>
-        {delta !== undefined && (
-          <span className={styles.delta} style={{ color: delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-            {delta >= 0 ? '↑' : '↓'} {Math.abs(delta)}%
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-[13px] font-medium text-[var(--text-muted)] whitespace-nowrap overflow-hidden text-ellipsis">
+          {title}
+        </span>
+        <span className="text-[26px] font-extrabold text-[var(--text-primary)] leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+          {value}
+        </span>
+        {trend !== undefined && (
+          <span className={`text-[12px] font-semibold mt-1 flex items-center gap-1 ${isPositive ? 'text-green-500' : isNegative ? 'text-red-500' : 'text-[var(--text-muted)]'}`}>
+            {isPositive ? '↑' : isNegative ? '↓' : '−'}
+            {Math.abs(trend)}% from last week
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }

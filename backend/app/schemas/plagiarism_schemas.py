@@ -33,9 +33,32 @@ class ReportResponse(BaseModel):
     id: str
     comparison_id: str
     report_data: Dict[str, Any]
+    share_token: Optional[str] = None
     generated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ── Enhanced response with smart highlighting data ────────────────────────────
+class SentenceMatch(BaseModel):
+    sentence_a: str
+    sentence_b: str
+    index_a: int
+    index_b: int
+    similarity: float
+    level: str   # "high" | "partial" | "low"
+
+
+class HighlightSentence(BaseModel):
+    text: str
+    index: int
+    level: Optional[str] = None    # null = no match
+    similarity: float = 0.0
+
+
+class HighlightMap(BaseModel):
+    sentences_a: List[HighlightSentence]
+    sentences_b: List[HighlightSentence]
 
 
 class PlagiarismSummary(BaseModel):
@@ -43,3 +66,9 @@ class PlagiarismSummary(BaseModel):
     report: Optional[ReportResponse] = None
     matching_sentences: List[str] = []
     matching_keywords: List[str] = []
+    # New enhanced fields
+    sentence_matches: List[SentenceMatch] = []
+    highlight_map: Optional[HighlightMap] = None
+    semantic_score: float = 0.0
+    semantic_matches: List[SentenceMatch] = []
+    matching_subgraph: Optional[Dict[str, Any]] = None

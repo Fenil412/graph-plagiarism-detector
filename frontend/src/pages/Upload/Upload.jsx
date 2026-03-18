@@ -1,23 +1,73 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload as UploadIcon, File, CheckCircle, XCircle, Loader, X } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { documentAPI } from '@/services/api'
+import { Upload as UploadIcon, File, CheckCircle, XCircle, Loader, X, Network, FileText } from 'lucide-react'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { documentAPI, plagiarismAPI } from '@/services/api'
 import toast from 'react-hot-toast'
 import PageWrapper from '@/components/ui/PageWrapper'
 import styles from './Upload.module.css'
 
-function FileItem({ file, status, onRemove }) {
+const STEPS = ['Upload', 'Processing', 'Graph Build', 'Ready']
+
+function ProgressSteps({ currentStep, steps }) {
+  return (
+    <div className={styles.progressSteps}>
+      {steps.map((label, i) => {
+        const step = i + 1
+        const isActive = step === currentStep
+        const isDone = step < currentStep
+        const isError = currentStep === -1
+        return (
+          <div key={i} className={styles.stepItem}>
+            <div className={`${styles.stepCircle} ${isDone ? styles.stepDone : isActive ? styles.stepActive : ''} ${isError ? styles.stepError : ''}`}>
+              {isDone ? <CheckCircle size={14}/> : isError ? <XCircle size={14}/> : <span>{step}</span>}
+            </div>
+            <span className={styles.stepLabel} style={{ color: isActive ? 'var(--accent-primary)' : isDone ? 'var(--success)' : 'var(--text-muted)' }}>
+              {label}
+            </span>
+            {i < steps.length - 1 && <div className={`${styles.stepLine} ${isDone ? styles.stepLineDone : ''}`}/>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function FileItem({ file, status, onRemove, documentId }) {
   const icons = { idle: <File size={18}/>, uploading: <Loader size={18} className="animate-spin"/>, done: <CheckCircle size={18}/>, error: <XCircle size={18}/> }
   const colors = { idle:'var(--text-muted)', uploading:'var(--info)', done:'var(--success)', error:'var(--danger)' }
+
+  // Poll document status after upload
+  const { data: statusData } = useQuery({
+    queryKey: ['doc-status', documentId],
+    queryFn: () => plagiarismAPI.status(documentId).then(r => r.data),
+    enabled: !!documentId && status === 'done',
+    refetchInterval: 2000,
+  })
+
+  const step = statusData?.step || (status === 'done' ? 1 : 0)
+  const isReady = statusData?.status === 'READY'
+
   return (
     <motion.div className={styles.fileItem} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, x:20 }}>
-      <div className={styles.fileIcon} style={{ color: colors[status] }}>{icons[status]}</div>
+      <div className={styles.fileIcon} style={{ color: isReady ? 'var(--success)' : colors[status] }}>
+        {isReady ? <Network size={18}/> : icons[status]}
+      </div>
       <div className={styles.fileInfo}>
         <span className={styles.fileName}>{file.name}</span>
-        <span className={styles.fileSize}>{(file.size/1024).toFixed(1)} KB · {status}</span>
-        {status === 'uploading' && <div className={styles.progressBar}><motion.div className={styles.progressFill} animate={{ width:['0%','100%'] }} transition={{ duration:2.5, ease:'easeInOut' }}/></div>}
+        <span className={styles.fileSize}>
+          {(file.size/1024).toFixed(1)} KB · {isReady ? '✅ Ready' : status}
+        </span>
+        {status === 'uploading' && (
+          <div className={styles.progressBar}>
+            <motion.div className={styles.progressFill} animate={{ width:['0%','100%'] }} transition={{ duration:2.5, ease:'easeInOut' }}/>
+          </div>
+        )}
+        {/* Show step progress after upload */}
+        {documentId && status === 'done' && !isReady && (
+          <ProgressSteps currentStep={step} steps={STEPS}/>
+        )}
       </div>
       {status !== 'uploading' && (
         <button className={styles.removeBtn} onClick={onRemove}><X size={14}/></button>
@@ -29,6 +79,7 @@ function FileItem({ file, status, onRemove }) {
 export default function Upload() {
   const [files, setFiles] = useState([])
   const [statuses, setStatuses] = useState({})
+  const [docIds, setDocIds] = useState({})  // file.name -> document ID
   const queryClient = useQueryClient()
 
   const { mutateAsync: uploadFile } = useMutation({
@@ -57,8 +108,12 @@ export default function Upload() {
     for (const file of pending) {
       setStatuses(s => ({ ...s, [file.name]: 'uploading' }))
       try {
-        await uploadFile(file)
+        const res = await uploadFile(file)
         setStatuses(s => ({ ...s, [file.name]: 'done' }))
+        // Store the document ID for status tracking
+        if (res.data?.id) {
+          setDocIds(d => ({ ...d, [file.name]: res.data.id }))
+        }
         toast.success(`${file.name} uploaded!`)
       } catch {
         setStatuses(s => ({ ...s, [file.name]: 'error' }))
@@ -70,14 +125,21 @@ export default function Upload() {
   const remove = name => {
     setFiles(f => f.filter(x => x.name !== name))
     setStatuses(s => { const n = { ...s }; delete n[name]; return n })
+    setDocIds(d => { const n = { ...d }; delete n[name]; return n })
   }
 
   return (
     <PageWrapper>
       <div className="page-container">
-        <h2 style={{ marginBottom:'0.5rem' }}>Upload Document</h2>
+        <motion.h1 
+          className="text-4xl font-black mb-3 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] bg-clip-text text-transparent"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          Upload Document
+        </motion.h1>
         <p style={{ color:'var(--text-muted)', marginBottom:'2rem' }}>
-          Upload PDF, TXT or DOCX files. Graphs are built automatically in the background.
+          Upload PDF, TXT or DOCX files. Graphs are built automatically in the background. Track progress in real-time.
         </p>
 
         {/* Drop zone */}
@@ -93,7 +155,9 @@ export default function Upload() {
             <div className={styles.exts}>
               {['PDF','TXT','DOCX'].map(e => <span key={e} className="badge badge-purple">{e}</span>)}
             </div>
-            <p style={{fontSize:'0.78rem', color:'var(--text-muted)', marginTop:'0.5rem'}}>Max 10 MB per file</p>
+            <p style={{fontSize:'0.78rem', color:'var(--text-muted)', marginTop:'0.5rem'}}>
+              Max 10 MB per file · Auto-checked against knowledge base
+            </p>
           </motion.div>
         </div>
 
@@ -110,7 +174,13 @@ export default function Upload() {
               </div>
               <AnimatePresence>
                 {files.map(f => (
-                  <FileItem key={f.name} file={f} status={statuses[f.name] || 'idle'} onRemove={() => remove(f.name)} />
+                  <FileItem
+                    key={f.name}
+                    file={f}
+                    status={statuses[f.name] || 'idle'}
+                    onRemove={() => remove(f.name)}
+                    documentId={docIds[f.name]}
+                  />
                 ))}
               </AnimatePresence>
             </motion.div>

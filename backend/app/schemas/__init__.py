@@ -6,6 +6,21 @@ from app.schemas.plagiarism_schemas import (
     ComparisonResponse,
     ReportResponse,
     PlagiarismSummary,
+    SentenceMatch,
+    HighlightMap,
+    HighlightSentence,
+)
+from app.schemas.notification_schemas import (
+    NotificationResponse,
+    NotificationListResponse,
+    NotificationMarkReadRequest,
+)
+from app.schemas.analytics_schemas import (
+    AnalyticsOverview,
+    AdminAnalytics,
+    ScanRequest,
+    ScanResponse,
+    ScanResultItem,
 )
 
 __all__ = [
@@ -13,4 +28,7 @@ __all__ = [
     "DocumentResponse", "DocumentListResponse",
     "GraphResponse", "GraphGenerateRequest", "NodeSchema", "EdgeSchema",
     "CompareDocumentsRequest", "ComparisonResponse", "ReportResponse", "PlagiarismSummary",
+    "SentenceMatch", "HighlightMap", "HighlightSentence",
+    "NotificationResponse", "NotificationListResponse", "NotificationMarkReadRequest",
+    "AnalyticsOverview", "AdminAnalytics", "ScanRequest", "ScanResponse", "ScanResultItem",
 ]

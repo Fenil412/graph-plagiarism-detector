@@ -3,12 +3,13 @@ app/services/plagiarism_service.py
 ─────────────────────────────────────────────────────────────────────────────
 Orchestrates plagiarism comparison between two documents:
   1. Fetch stored graphs
-  2. Run graph similarity
+  2. Run graph similarity + semantic AI analysis
   3. Persist Comparison + Report records
-  4. Return structured result
+  4. Return structured result with smart highlighting data
 """
 from __future__ import annotations
 
+import uuid
 from fastapi import HTTPException
 from prisma import Prisma, Json
 
@@ -69,7 +70,7 @@ async def compare_documents(
     )
 
     try:
-        # ── Run detection ─────────────────────────────────────────────────────
+        # ── Run detection (enhanced with semantic + highlighting) ─────────
         result = detect_plagiarism(
             nodes_a=graph_a.nodes,
             edges_a=graph_a.edges,
@@ -80,7 +81,7 @@ async def compare_documents(
             algorithm=payload.algorithm,
         )
 
-        # ── Update Comparison record ──────────────────────────────────────────
+        # ── Update Comparison record ──────────────────────────────────────
         comparison = await db.comparison.update(
             where={"id": comparison.id},
             data={
@@ -90,7 +91,8 @@ async def compare_documents(
             },
         )
 
-        # ── Create Report ──────────────────────────────────────────────────────
+        # ── Create Report ──────────────────────────────────────────────────
+        share_token = str(uuid.uuid4())[:12]
         report_data = {
             "algorithm":          result["algorithm_used"],
             "similarity_score":   result["similarity_score"],
@@ -99,24 +101,56 @@ async def compare_documents(
             "edge_overlap_count": result["edge_overlap_count"],
             "matching_keywords":  result["matching_keywords"],
             "matching_sentences": result["matching_sentences"],
+            "sentence_matches":   result["sentence_matches"],
+            "highlight_map":      result["highlight_map"],
+            "semantic_score":     result["semantic_score"],
+            "semantic_matches":   result["semantic_matches"],
+            "matching_subgraph":  result["matching_subgraph"],
         }
         report = await db.report.create(
             data={
                 "comparison_id": comparison.id,
                 "report_data":   Json(report_data),
+                "share_token":   share_token,
             }
         )
 
         logger.info(
             f"Comparison done: {payload.document_a_id} vs {payload.document_b_id} "
-            f"→ {result['plagiarism_percentage']}%"
+            f"→ {result['plagiarism_percentage']}% (semantic={result['semantic_score']:.4f})"
         )
+
+        # ── Create notification ───────────────────────────────────────────
+        pct = result["plagiarism_percentage"]
+        notif_type = "warning" if pct >= 60 else "success" if pct < 30 else "info"
+        notif_title = "High Plagiarism Detected!" if pct >= 60 else "Analysis Complete"
+        notif_msg = (
+            f"Comparison of documents found {pct}% similarity "
+            f"using {payload.algorithm.replace('_', ' ')} algorithm."
+        )
+        try:
+            await db.notification.create(
+                data={
+                    "user_id": user_id,
+                    "type":    notif_type,
+                    "title":   notif_title,
+                    "message": notif_msg,
+                    "link":    f"/reports?id={comparison.id}",
+                }
+            )
+        except Exception:
+            pass   # Non-critical — don't fail the comparison
 
         return PlagiarismSummary(
             comparison=_to_comparison(comparison),
             report=_to_report(report),
             matching_keywords=result["matching_keywords"],
             matching_sentences=result["matching_sentences"],
+            sentence_matches=result["sentence_matches"],
+            highlight_map=result["highlight_map"],
+            semantic_score=result["semantic_score"],
+            semantic_matches=result["semantic_matches"],
+            matching_subgraph=result["matching_subgraph"],
         )
 
     except Exception as exc:
@@ -146,8 +180,15 @@ async def get_report(comparison_id: str, user_id: str, db: Prisma) -> ReportResp
     return _to_report(report)
 
 
+async def get_report_by_share_token(share_token: str, db: Prisma) -> ReportResponse:
+    """Public access to a report via share link."""
+    report = await db.report.find_first(where={"share_token": share_token})
+    if not report:
+        raise HTTPException(status_code=404, detail="Shared report not found.")
+    return _to_report(report)
+
+
 async def get_history(user_id: str, db: Prisma) -> list[ComparisonResponse]:
-    # Prisma Python doesn't support `select` dynamically here so we fetch docs and extract ids.
     docs = await db.document.find_many(where={"user_id": user_id})
     doc_ids = [d.id for d in docs]
 
@@ -181,5 +222,6 @@ def _to_report(r) -> ReportResponse:
         id=r.id,
         comparison_id=r.comparison_id,
         report_data=r.report_data,
+        share_token=getattr(r, 'share_token', None),
         generated_at=r.generated_at,
     )

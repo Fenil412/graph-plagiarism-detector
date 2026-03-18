@@ -27,6 +27,8 @@ model User {
 
   // Relations
   documents     Document[]
+  notifications Notification[]
+  scan_jobs     ScanJob[]
 
   @@map("users")
 }
@@ -56,6 +58,7 @@ model Document {
 
   comparisons_as_a  Comparison[] @relation("DocumentA")
   comparisons_as_b  Comparison[] @relation("DocumentB")
+  scan_jobs         ScanJob[]
 
   @@map("documents")
 }
@@ -118,10 +121,48 @@ model Report {
   id            String   @id @default(cuid())
   comparison_id String   @unique
   report_data   Json     // Detailed breakdown: matching nodes, edges, sentences
+  share_token   String?  @unique  // Shareable link token
   generated_at  DateTime @default(now())
 
   // Relations
   comparison    Comparison @relation(fields: [comparison_id], references: [id], onDelete: Cascade)
 
   @@map("reports")
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+model Notification {
+  id         String   @id @default(cuid())
+  user_id    String
+  type       String   @default("info")      // "info" | "success" | "warning" | "error"
+  title      String
+  message    String
+  is_read    Boolean  @default(false)
+  link       String?                        // Optional link to navigate to
+  created_at DateTime @default(now())
+
+  // Relations
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ── Scan Jobs (Multi-Document Detection) ──────────────────────────────────────
+model ScanJob {
+  id              String   @id @default(cuid())
+  user_id         String
+  source_doc_id   String
+  status          CompStatus @default(PENDING)
+  algorithm       String   @default("node_overlap")
+  results         Json?    // Array of { document_id, similarity_score, plagiarism_pct }
+  total_compared  Int      @default(0)
+  highest_score   Float    @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  source_document Document @relation(fields: [source_doc_id], references: [id], onDelete: Cascade)
+
+  @@map("scan_jobs")
 }

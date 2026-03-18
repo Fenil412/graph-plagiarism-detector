@@ -58,9 +58,34 @@ export const graphAPI = {
 export const plagiarismAPI = {
   compare: (document_a_id, document_b_id, algorithm = 'node_overlap') =>
     api.post('/plagiarism/compare', { document_a_id, document_b_id, algorithm }),
-  report:     comparison_id => api.get(`/plagiarism/report/${comparison_id}`),
-  history:    ()            => api.get('/plagiarism/history'),
-  algorithms: ()            => api.get('/plagiarism/algorithms'),
+  report:      comparison_id => api.get(`/plagiarism/report/${comparison_id}`),
+  sharedReport: share_token  => api.get(`/plagiarism/report/share/${share_token}`),
+  downloadPdf: comparison_id => api.get(`/plagiarism/report/${comparison_id}/pdf`, {
+    responseType: 'blob',
+  }),
+  history:     ()            => api.get('/plagiarism/history'),
+  algorithms:  ()            => api.get('/plagiarism/algorithms'),
+  status:      document_id   => api.get(`/plagiarism/status/${document_id}`),
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+export const notificationAPI = {
+  list:       ()   => api.get('/notifications/'),
+  markRead:   ids  => api.post('/notifications/read', { notification_ids: ids || [] }),
+  delete:     id   => api.delete(`/notifications/${id}`),
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+export const analyticsAPI = {
+  overview:    ()  => api.get('/analytics/overview'),
+  admin:       ()  => api.get('/analytics/admin'),
+}
+
+// ── Multi-Document Scan ───────────────────────────────────────────────────────
+export const scanAPI = {
+  run:        (document_id, algorithm = 'node_overlap') =>
+    api.post('/scan/run', { document_id, algorithm }),
+  history:    ()  => api.get('/scan/history'),
 }
 
 export default api

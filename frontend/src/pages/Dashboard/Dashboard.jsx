@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { FileText, Network, GitCompare, TrendingUp, Clock, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useTheme } from '@/context/ThemeContext'
 import { documentAPI, plagiarismAPI } from '@/services/api'
 import StatCard from '@/components/ui/StatCard'
 import PageWrapper from '@/components/ui/PageWrapper'
@@ -27,6 +28,7 @@ import { Line, Doughnut, Bar, PolarArea } from 'react-chartjs-2'
 import ForceGraph3D from 'react-force-graph-3d'
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
+import toast from 'react-hot-toast'
 
 ChartJS.register(
   CategoryScale,
@@ -123,6 +125,8 @@ function generateToughGraph() {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { theme } = useTheme()
+  const legendLabelColor = theme === 'dark' ? '#e2e8f0' : '#334155'
   const { data, isLoading } = useQuery({
     queryKey: ['documents'],
     queryFn: () => documentAPI.list().then(r => r.data),
@@ -233,6 +237,11 @@ export default function Dashboard() {
   const dummyActivityLabels = ['Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16', 'Mar 17']
   const dummyActivityData = [3, 5, 2, 8, 6, 12, 7]
 
+  // -- Hovered doughnut segment state --
+  const [hoveredDoughnut, setHoveredDoughnut] = useState(null)
+  const [hoveredPolar, setHoveredPolar] = useState(null)
+  const [focusedNode, setFocusedNode] = useState(null)
+
   // Chartjs Configs
   const lineChartData = {
     labels: hasEnoughActivity ? activity.labels : dummyActivityLabels,
@@ -241,18 +250,43 @@ export default function Dashboard() {
         label: 'Uploads',
         data: hasEnoughActivity ? activity.data : dummyActivityData,
         borderColor: '#7c3aed',
-        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+        backgroundColor: (ctx) => {
+          const chart = ctx.chart
+          const { ctx: c, chartArea } = chart
+          if (!chartArea) return 'rgba(124, 58, 237, 0.1)'
+          const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+          gradient.addColorStop(0, 'rgba(124, 58, 237, 0.3)')
+          gradient.addColorStop(0.5, 'rgba(124, 58, 237, 0.08)')
+          gradient.addColorStop(1, 'rgba(124, 58, 237, 0)')
+          return gradient
+        },
         tension: 0.4,
         fill: true,
         pointBackgroundColor: '#06b6d4',
         pointBorderColor: '#7c3aed',
         pointBorderWidth: 2,
         pointRadius: 5,
-        pointHoverRadius: 7,
+        pointHoverRadius: 10,
+        pointHoverBorderWidth: 3,
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: '#7c3aed',
         borderWidth: 2.5,
       }
     ]
   }
+
+  const polarColors = [
+    'rgba(124, 58, 237, 0.7)',
+    'rgba(6, 182, 212, 0.7)',
+    'rgba(245, 158, 11, 0.7)',
+    'rgba(239, 68, 68, 0.7)',
+  ]
+  const polarHoverColors = [
+    'rgba(124, 58, 237, 0.95)',
+    'rgba(6, 182, 212, 0.95)',
+    'rgba(245, 158, 11, 0.95)',
+    'rgba(239, 68, 68, 0.95)',
+  ]
 
   const polarData = {
     labels: ['Node Overlap', 'Edge Similarity', 'Subgraph', 'Graph Edit Distance'],
@@ -260,82 +294,276 @@ export default function Dashboard() {
       data: hasEnoughAlgo
         ? [algoCounts.node_overlap, algoCounts.edge_similarity, algoCounts.subgraph, algoCounts.graph_edit_distance]
         : [14, 9, 6, 4],
-      backgroundColor: [
-        'rgba(124, 58, 237, 0.7)',
-        'rgba(6, 182, 212, 0.7)',
-        'rgba(245, 158, 11, 0.7)',
-        'rgba(239, 68, 68, 0.7)',
-      ],
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.1)'
+      backgroundColor: polarColors,
+      hoverBackgroundColor: polarHoverColors,
+      borderWidth: 2,
+      borderColor: 'rgba(255,255,255,0.15)',
+      hoverBorderColor: '#fff',
+      hoverBorderWidth: 3,
     }]
   }
 
-  // Dummy status data when only one status has items
+  const statusColors = ['#10b981', '#f59e0b', '#06b6d4', '#ef4444']
+  const statusLabels = ['Ready', 'Pending', 'Processing', 'Error']
+  const statusDataArr = hasEnoughStatuses
+    ? [statusCounts.READY, statusCounts.PENDING, statusCounts.PROCESSING, statusCounts.ERROR]
+    : [statusCounts.READY || 8, statusCounts.PENDING || 3, statusCounts.PROCESSING || 2, statusCounts.ERROR || 1]
+  const statusTotal = statusDataArr.reduce((a, b) => a + b, 0)
+
   const doughnutData = {
-    labels: ['Ready', 'Pending', 'Processing', 'Error'],
+    labels: statusLabels,
     datasets: [{
-      data: hasEnoughStatuses
-        ? [statusCounts.READY, statusCounts.PENDING, statusCounts.PROCESSING, statusCounts.ERROR]
-        : [
-            statusCounts.READY || 8,
-            statusCounts.PENDING || 3,
-            statusCounts.PROCESSING || 2,
-            statusCounts.ERROR || 1,
-          ],
-      backgroundColor: ['#10b981', '#f59e0b', '#06b6d4', '#ef4444'],
+      data: statusDataArr,
+      backgroundColor: statusColors,
+      hoverBackgroundColor: statusColors.map(c => c + 'dd'),
       borderWidth: 0,
-      hoverOffset: 6
+      hoverOffset: 12,
+      hoverBorderWidth: 3,
+      hoverBorderColor: '#fff',
     }]
   }
+
+  // -- Interactive crosshair + vertical line plugin --
+  const crosshairPlugin = useMemo(() => ({
+    id: 'crosshair',
+    afterDraw(chart) {
+      const { tooltip, ctx, chartArea } = chart
+      if (tooltip?._active?.length) {
+        const x = tooltip._active[0].element.x
+        ctx.save()
+        ctx.beginPath()
+        ctx.moveTo(x, chartArea.top)
+        ctx.lineTo(x, chartArea.bottom)
+        ctx.lineWidth = 1
+        ctx.strokeStyle = 'rgba(124, 58, 237, 0.35)'
+        ctx.setLineDash([4, 4])
+        ctx.stroke()
+        ctx.restore()
+      }
+    }
+  }), [])
+
+  // -- Doughnut center label plugin --
+  const doughnutCenterPlugin = useMemo(() => ({
+    id: 'doughnutCenter',
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart
+      if (!chartArea) return
+      const cx = (chartArea.left + chartArea.right) / 2
+      const cy = (chartArea.top + chartArea.bottom) / 2
+      const active = chart.tooltip?._active?.[0]
+      let label = 'Total'
+      let value = statusTotal
+      let color = '#94a3b8'
+      if (active) {
+        const idx = active.index
+        label = statusLabels[idx]
+        value = statusDataArr[idx]
+        color = statusColors[idx]
+      }
+      ctx.save()
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = 'bold 24px Inter, sans-serif'
+      ctx.fillStyle = color
+      ctx.fillText(value, cx, cy - 8)
+      ctx.font = '500 11px Inter, sans-serif'
+      ctx.fillStyle = '#94a3b8'
+      ctx.fillText(label, cx, cy + 14)
+      ctx.restore()
+    }
+  }), [statusTotal, statusDataArr])
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 1200,
+      easing: 'easeInOutQuart',
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
         titleColor: '#fff',
+        titleFont: { size: 13, weight: 'bold' },
         bodyColor: '#cbd5e1',
-        borderColor: '#334155',
+        bodyFont: { size: 12 },
+        borderColor: 'rgba(124, 58, 237, 0.4)',
         borderWidth: 1,
-        padding: 10,
-        cornerRadius: 8,
+        padding: 14,
+        cornerRadius: 10,
+        displayColors: true,
+        boxPadding: 6,
+        caretSize: 6,
+        caretPadding: 8,
+        callbacks: {
+          title: (items) => `📅 ${items[0].label}`,
+          label: (item) => ` ${item.dataset.label}: ${item.formattedValue} documents`,
+          afterLabel: (item) => {
+            const prev = item.dataIndex > 0 ? item.dataset.data[item.dataIndex - 1] : null
+            if (prev !== null) {
+              const diff = item.raw - prev
+              const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '→'
+              const color = diff > 0 ? '🟢' : diff < 0 ? '🔴' : '⚪'
+              return `${color} ${arrow} ${Math.abs(diff)} from previous`
+            }
+            return ''
+          },
+        },
       }
     },
     scales: {
       y: {
         display: true,
-        grid: { color: 'rgba(148, 163, 184, 0.06)' },
-        ticks: { color: '#64748b', font: { size: 11 } },
+        grid: { color: 'rgba(148, 163, 184, 0.06)', drawBorder: false },
+        ticks: { color: '#64748b', font: { size: 11 }, padding: 8 },
         beginAtZero: true,
       },
-      x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } }
-    }
+      x: {
+        grid: { display: false, drawBorder: false },
+        ticks: { color: '#64748b', font: { size: 11 }, padding: 8 },
+      }
+    },
+    onHover: (event, elements) => {
+      event.native.target.style.cursor = elements.length ? 'pointer' : 'default'
+    },
+    onClick: (event, elements) => {
+      if (elements.length) {
+        const idx = elements[0].index
+        const label = hasEnoughActivity ? activity.labels[idx] : dummyActivityLabels[idx]
+        const value = hasEnoughActivity ? activity.data[idx] : dummyActivityData[idx]
+        toast(`📅 ${label}: ${value} document${value !== 1 ? 's' : ''} uploaded`, { icon: '📊' })
+      }
+    },
   }
 
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
     cutout: '70%',
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 1000,
+      easing: 'easeOutBounce',
+    },
     plugins: {
-      legend: { position: 'right', labels: { color: '#94a3b8', usePointStyle: true, padding: 16, font: { size: 12 } } },
-    }
+      legend: {
+        position: 'right',
+        labels: {
+          color: legendLabelColor,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 16,
+          font: { size: 13, weight: '600' },
+          generateLabels: (chart) => {
+            const data = chart.data
+            return data.labels.map((label, i) => ({
+              text: `${label} (${data.datasets[0].data[i]})`,
+              fillStyle: data.datasets[0].backgroundColor[i],
+              fontColor: legendLabelColor,
+              strokeStyle: 'transparent',
+              pointStyle: 'circle',
+              hidden: false,
+              index: i,
+            }))
+          },
+        },
+        onClick: (e, legendItem, legend) => {
+          toast(`📌 ${legendItem.text.split(' (')[0]}: ${statusDataArr[legendItem.index]} documents`, { icon: '📋' })
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#fff',
+        titleFont: { size: 13, weight: 'bold' },
+        bodyColor: '#cbd5e1',
+        borderColor: 'rgba(124, 58, 237, 0.4)',
+        borderWidth: 1,
+        padding: 14,
+        cornerRadius: 10,
+        displayColors: true,
+        callbacks: {
+          label: (item) => {
+            const pct = ((item.raw / statusTotal) * 100).toFixed(1)
+            return ` ${item.label}: ${item.raw} (${pct}%)`
+          },
+        },
+      },
+    },
+    onHover: (event, elements) => {
+      event.native.target.style.cursor = elements.length ? 'pointer' : 'default'
+    },
+    onClick: (event, elements) => {
+      if (elements.length) {
+        const idx = elements[0].index
+        toast(`📌 ${statusLabels[idx]}: ${statusDataArr[idx]} documents (${((statusDataArr[idx] / statusTotal) * 100).toFixed(1)}%)`, { icon: '📊' })
+      }
+    },
   }
 
   const polarOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 1200,
+    },
     scales: {
       r: {
         ticks: { display: false },
-        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+        pointLabels: { display: false },
       }
     },
     plugins: {
-      legend: { position: 'right', labels: { color: '#94a3b8', usePointStyle: true, font: { size: 11 } } },
-    }
+      legend: {
+        position: 'right',
+        labels: {
+          color: legendLabelColor,
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+          font: { size: 12, weight: '600' },
+          padding: 12,
+        },
+        onClick: (e, legendItem, legend) => {
+          const algoNames = ['Node Overlap', 'Edge Similarity', 'Subgraph', 'Graph Edit Distance']
+          toast(`🔬 ${algoNames[legendItem.index]}: ${polarData.datasets[0].data[legendItem.index]} comparisons`, { icon: '⚙️' })
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#fff',
+        bodyColor: '#cbd5e1',
+        borderColor: 'rgba(124, 58, 237, 0.4)',
+        borderWidth: 1,
+        padding: 14,
+        cornerRadius: 10,
+        callbacks: {
+          label: (item) => {
+            const total = polarData.datasets[0].data.reduce((a, b) => a + b, 0)
+            const pct = ((item.raw / total) * 100).toFixed(1)
+            return ` ${item.label}: ${item.raw} uses (${pct}%)`
+          },
+        },
+      },
+    },
+    onHover: (event, elements) => {
+      event.native.target.style.cursor = elements.length ? 'pointer' : 'default'
+    },
+    onClick: (event, elements) => {
+      if (elements.length) {
+        const idx = elements[0].index
+        const algoNames = ['Node Overlap', 'Edge Similarity', 'Subgraph', 'Graph Edit Distance']
+        toast(`🔬 ${algoNames[idx]}: ${polarData.datasets[0].data[idx]} comparisons`, { icon: '⚙️' })
+      }
+    },
   }
 
   return (
@@ -373,38 +601,38 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           
           {/* Activity Line Chart */}
-          <motion.div 
+          <motion.div className={styles.chartCard}
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
-            style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', border: '1px solid var(--border-subtle)' }}
           >
-            <h3 style={{ fontSize: '1.05rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 className={styles.chartTitle}>
               <TrendingUp size={18} color="#7c3aed" /> Activity Over Time
+              <span className={styles.chartHint}>Click points to explore</span>
             </h3>
-            <div style={{ height: '220px' }}>
-              <Line data={lineChartData} options={chartOptions} />
+            <div style={{ height: '220px', cursor: 'crosshair' }}>
+              <Line data={lineChartData} options={chartOptions} plugins={[crosshairPlugin]} />
             </div>
           </motion.div>
 
           {/* Status Doughnut Chart */}
-          <motion.div 
+          <motion.div className={styles.chartCard}
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
-            style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', border: '1px solid var(--border-subtle)' }}
           >
-            <h3 style={{ fontSize: '1.05rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 className={styles.chartTitle}>
               <Network size={18} color="#06b6d4" /> Document Processing Status
+              <span className={styles.chartHint}>Click segments or legend</span>
             </h3>
             <div style={{ height: '220px' }}>
-                <Doughnut data={doughnutData} options={doughnutOptions} />
+                <Doughnut data={doughnutData} options={doughnutOptions} plugins={[doughnutCenterPlugin]} />
             </div>
           </motion.div>
 
           {/* Algorithm Polar Area Chart */}
-          <motion.div 
+          <motion.div className={styles.chartCard}
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35 }}
-            style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', border: '1px solid var(--border-subtle)' }}
           >
-            <h3 style={{ fontSize: '1.05rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 className={styles.chartTitle}>
               <GitCompare size={18} color="#10b981" /> Algorithm Popularity
+              <span className={styles.chartHint}>Click to view stats</span>
             </h3>
             <div style={{ height: '220px' }}>
                 <PolarArea data={polarData} options={polarOptions} />
@@ -443,17 +671,63 @@ export default function Dashboard() {
                 nodeThreeObject={nodeThreeObject}
                 nodeThreeObjectExtend={false}
                 nodeRelSize={3}
-                linkWidth={1.2}
-                linkOpacity={0.4}
+                linkWidth={link => link.value > 0.4 ? 1.8 : 1}
+                linkOpacity={0.5}
                 linkColor={link => {
                   const src = graphData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))
                   return src ? src.color + '88' : 'rgba(124, 58, 237, 0.35)'
+                }}
+                linkDirectionalParticles={2}
+                linkDirectionalParticleWidth={1.5}
+                linkDirectionalParticleSpeed={0.005}
+                linkDirectionalParticleColor={link => {
+                  const src = graphData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))
+                  return src ? src.color : '#7c3aed'
+                }}
+                onNodeClick={(node) => {
+                  setFocusedNode(node)
+                  const distance = 80
+                  const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z)
+                  graphRef.current?.cameraPosition(
+                    { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+                    node,
+                    1200
+                  )
+                  toast(`🔍 ${node.name} (${node.groupName})`, { icon: '🧠', style: { background: '#0f172a', color: '#e2e8f0', border: '1px solid ' + node.color } })
+                }}
+                onNodeHover={(node) => {
+                  document.body.style.cursor = node ? 'pointer' : 'default'
                 }}
                 backgroundColor="#090a0f"
                 showNavInfo={false}
                 width={document.body.clientWidth - (document.body.clientWidth > 768 ? 320 : 64)}
                 height={400}
               />
+              {/* Focused node info overlay */}
+              {focusedNode && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    position: 'absolute', bottom: 12, left: 12, right: 12,
+                    background: 'rgba(10, 12, 20, 0.92)', backdropFilter: 'blur(8px)',
+                    border: `1px solid ${focusedNode.color}44`,
+                    borderRadius: 10, padding: '0.75rem 1rem',
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    zIndex: 20,
+                  }}
+                >
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: focusedNode.color, flexShrink: 0 }}/>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#e2e8f0' }}>{focusedNode.name}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Category: {focusedNode.groupName} · Click another node to explore</div>
+                  </div>
+                  <button onClick={() => setFocusedNode(null)} style={{
+                    background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 6,
+                    color: '#94a3b8', padding: '4px 8px', cursor: 'pointer', fontSize: '0.7rem',
+                  }}>Dismiss</button>
+                </motion.div>
+              )}
            </div>
         </motion.div>
 

@@ -29,6 +29,9 @@ from app.routers import (
     document_router,
     graph_router,
     plagiarism_router,
+    notification_router,
+    analytics_router,
+    scan_router,
 )
 
 
@@ -54,7 +57,8 @@ app = FastAPI(
     title=settings.APP_NAME,
     description=(
         "Graph-Based Plagiarism Detection System — REST API\n\n"
-        "Powered by NetworkX graph algorithms and NLTK text preprocessing."
+        "Powered by NetworkX graph algorithms, semantic AI (TF-IDF),\n"
+        "and NLTK text preprocessing."
     ),
     version=settings.API_VERSION,
     docs_url="/docs",
@@ -78,10 +82,13 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 BASE = f"/api/{settings.API_VERSION}"
-app.include_router(auth_router,       prefix=BASE)
-app.include_router(document_router,   prefix=BASE)
-app.include_router(graph_router,      prefix=BASE)
-app.include_router(plagiarism_router, prefix=BASE)
+app.include_router(auth_router,         prefix=BASE)
+app.include_router(document_router,     prefix=BASE)
+app.include_router(graph_router,        prefix=BASE)
+app.include_router(plagiarism_router,   prefix=BASE)
+app.include_router(notification_router, prefix=BASE)
+app.include_router(analytics_router,    prefix=BASE)
+app.include_router(scan_router,         prefix=BASE)
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import ProtectedRoute from '@/routes/ProtectedRoute'
 import AppLayout from '@/components/layout/AppLayout'
 import PageLoader from '@/components/ui/PageLoader'
+import CustomCursor from '@/components/ui/CustomCursor'
 
 const Home      = lazy(() => import('@/pages/Home/Home'))
 const Login     = lazy(() => import('@/pages/Auth/Login'))
@@ -12,6 +13,7 @@ const Register  = lazy(() => import('@/pages/Auth/Register'))
 const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard'))
 const Upload    = lazy(() => import('@/pages/Upload/Upload'))
 const Compare   = lazy(() => import('@/pages/Compare/Compare'))
+const Scan      = lazy(() => import('@/pages/Scan/Scan'))
 const Reports   = lazy(() => import('@/pages/Reports/Reports'))
 const History   = lazy(() => import('@/pages/History/History'))
 const Settings  = lazy(() => import('@/pages/Settings/Settings'))
@@ -21,6 +23,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <CustomCursor />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
@@ -35,6 +38,7 @@ export default function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/upload"    element={<Upload />} />
                   <Route path="/compare"   element={<Compare />} />
+                  <Route path="/scan"      element={<Scan />} />
                   <Route path="/reports"   element={<Reports />} />
                   <Route path="/history"   element={<History />} />
                   <Route path="/settings"  element={<Settings />} />

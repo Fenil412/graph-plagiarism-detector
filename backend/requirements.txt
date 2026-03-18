@@ -27,6 +27,13 @@ networkx==3.3
 # NLP
 nltk==3.8.1
 
+# Semantic AI / TF-IDF similarity
+scikit-learn==1.4.2
+numpy==1.26.4
+
+# PDF Report Generation
+reportlab==4.1.0
+
 # Async / Utilities
 anyio==4.3.0
 aiofiles==23.2.1

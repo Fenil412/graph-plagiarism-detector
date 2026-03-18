@@ -152,29 +152,44 @@ function FullscreenModal({ isOpen, onClose, label, accentColor, forceData, graph
     ctx.fillText(text, node.x, node.y + baseR + 2 + padding)
   }, [accentColor, hoveredNode])
 
-  // Edge renderer with weight labels
+  // Edge renderer with weight labels and hover highlighting
   const paintLink = useCallback((link, ctx, globalScale) => {
     const start = link.source
     const end = link.target
+
+    const srcId = typeof link.source === 'object' ? link.source.id : link.source
+    const tgtId = typeof link.target === 'object' ? link.target.id : link.target
+    const isConnected = hoveredNode && (srcId === hoveredNode || tgtId === hoveredNode)
+
     ctx.beginPath()
     ctx.moveTo(start.x, start.y)
     ctx.lineTo(end.x, end.y)
-    ctx.strokeStyle = `${accentColor}55`
-    ctx.lineWidth = Math.max(0.8, (link.weight || 1) * 0.7)
+
+    if (isConnected) {
+      ctx.strokeStyle = `${accentColor}cc`
+      ctx.lineWidth = Math.max(1.8, (link.weight || 1) * 1.2)
+      ctx.shadowColor = accentColor
+      ctx.shadowBlur = 8
+    } else {
+      ctx.strokeStyle = hoveredNode ? `${accentColor}22` : `${accentColor}55`
+      ctx.lineWidth = Math.max(0.8, (link.weight || 1) * 0.7)
+    }
     ctx.stroke()
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
 
     // Weight label
-    if (globalScale > 0.8 && link.weight && link.weight > 1) {
+    if ((globalScale > 0.8 || isConnected) && link.weight && link.weight > 1) {
       const mx = (start.x + end.x) / 2
       const my = (start.y + end.y) / 2
       const fs = Math.max(7, 9 / globalScale)
       ctx.font = `${fs}px Inter, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillStyle = 'rgba(148,163,184,0.55)'
+      ctx.fillStyle = isConnected ? 'rgba(255,255,255,0.85)' : 'rgba(148,163,184,0.55)'
       ctx.fillText(link.weight.toFixed(1), mx, my)
     }
-  }, [accentColor])
+  }, [accentColor, hoveredNode])
 
   if (!isOpen) return null
 
@@ -221,8 +236,29 @@ function FullscreenModal({ isOpen, onClose, label, accentColor, forceData, graph
                 ctx.fill()
               }}
               onNodeHover={node => setHoveredNode(node?.id || null)}
+              onNodeClick={node => {
+                toast(`🔍 "${node.label}" — weight: ${node.weight?.toFixed(1) || 1}${node.isMatch ? ' ⭐ Matching keyword!' : ''}`, {
+                  icon: node.isMatch ? '⭐' : '🔎',
+                  style: { background: '#0f172a', color: '#e2e8f0', border: `1px solid ${node.isMatch ? '#f59e0b' : accentColor}` },
+                })
+              }}
+              onNodeDrag={node => {
+                node.fx = node.x
+                node.fy = node.y
+              }}
+              onNodeDragEnd={node => {
+                node.fx = node.x
+                node.fy = node.y
+              }}
               linkCanvasObject={paintLink}
-              linkDirectionalParticles={0}
+              linkDirectionalParticles={link => {
+                const srcMatch = forceData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))?.isMatch
+                const tgtMatch = forceData.nodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target))?.isMatch
+                return (srcMatch && tgtMatch) ? 3 : 0
+              }}
+              linkDirectionalParticleWidth={2}
+              linkDirectionalParticleSpeed={0.006}
+              linkDirectionalParticleColor={() => '#f59e0b'}
               cooldownTicks={100}
               d3AlphaDecay={0.03}
               d3VelocityDecay={0.25}
@@ -244,6 +280,7 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
   const [dimensions, setDimensions] = useState({ width: 400, height: 340 })
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredNode, setHoveredNode] = useState(null)
+  const [focusedNode, setFocusedNode] = useState(null)
 
   // Fetch graph data
   const { data: graphData, isLoading, isError } = useQuery({
@@ -301,39 +338,74 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
     return { nodes, links }
   }, [graphData, matchingKeywords, palette, accentColor])
 
+  // Count connections for a node
+  const getNodeConnections = useCallback((nodeId) => {
+    return forceData.links.filter(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source
+      const t = typeof l.target === 'object' ? l.target.id : l.target
+      return s === nodeId || t === nodeId
+    }).length
+  }, [forceData.links])
+
+  // Get connected node labels
+  const getConnectedLabels = useCallback((nodeId) => {
+    const connected = []
+    forceData.links.forEach(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source
+      const t = typeof l.target === 'object' ? l.target.id : l.target
+      if (s === nodeId) {
+        const n = forceData.nodes.find(x => x.id === t)
+        if (n) connected.push(n.label)
+      } else if (t === nodeId) {
+        const n = forceData.nodes.find(x => x.id === s)
+        if (n) connected.push(n.label)
+      }
+    })
+    return connected.slice(0, 5)
+  }, [forceData])
+
   // ── DEFAULT VIEW: clean graph, NO labels (labels only on hover or zoom) ──
   const paintNode = useCallback((node, ctx, globalScale) => {
     const r = Math.max(2.5, (node.weight || 1) * 1.8)
     const isMatch = node.isMatch
     const isHovered = hoveredNode === node.id
-    const showLabel = isHovered || globalScale > 3.0  // labels only on hover or high zoom
-    const nodeColor = isMatch ? '#f59e0b' : isHovered ? '#e2e8f0' : (node.color || accentColor)
+    const isFocused = focusedNode?.id === node.id
+    const showLabel = isHovered || isFocused || globalScale > 3.0
+    const nodeColor = isMatch ? '#f59e0b' : isHovered ? '#e2e8f0' : isFocused ? '#fff' : (node.color || accentColor)
 
     // Glow
-    if (isMatch || isHovered) {
-      ctx.shadowColor = isMatch ? '#f59e0b' : nodeColor
-      ctx.shadowBlur = isHovered ? 18 : 10
+    if (isMatch || isHovered || isFocused) {
+      ctx.shadowColor = isMatch ? '#f59e0b' : isFocused ? accentColor : nodeColor
+      ctx.shadowBlur = isFocused ? 22 : isHovered ? 18 : 10
     }
 
     // Node circle
     ctx.beginPath()
-    ctx.arc(node.x, node.y, r, 0, 2 * Math.PI)
+    ctx.arc(node.x, node.y, isFocused ? r * 1.4 : r, 0, 2 * Math.PI)
     ctx.fillStyle = nodeColor
     ctx.fill()
 
-    // Outer ring for larger nodes
-    if (node.weight > 2 || isMatch) {
-      ctx.strokeStyle = isMatch ? '#fbbf2488' : nodeColor + '66'
-      ctx.lineWidth = 0.5
+    // Outer ring for larger nodes or focused
+    if (node.weight > 2 || isMatch || isFocused) {
+      ctx.strokeStyle = isFocused ? '#fff44' : isMatch ? '#fbbf2488' : nodeColor + '66'
+      ctx.lineWidth = isFocused ? 1 : 0.5
       ctx.beginPath()
-      ctx.arc(node.x, node.y, r + 1.5, 0, 2 * Math.PI)
+      ctx.arc(node.x, node.y, (isFocused ? r * 1.4 : r) + 1.5, 0, 2 * Math.PI)
       ctx.stroke()
+    }
+
+    // Pinned indicator
+    if (node.fx !== undefined && node.fy !== undefined) {
+      ctx.fillStyle = accentColor + '88'
+      ctx.beginPath()
+      ctx.arc(node.x, node.y - r - 3, 1.5, 0, 2 * Math.PI)
+      ctx.fill()
     }
 
     ctx.shadowColor = 'transparent'
     ctx.shadowBlur = 0
 
-    // Label — only on hover or zoom
+    // Label — only on hover, focus, or zoom
     if (showLabel) {
       const fontSize = Math.max(7, 10 / globalScale)
       ctx.font = `600 ${fontSize}px Inter, sans-serif`
@@ -345,7 +417,7 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
       const pad = 2 / globalScale
 
       // Background pill
-      ctx.fillStyle = 'rgba(10, 12, 20, 0.8)'
+      ctx.fillStyle = isFocused ? 'rgba(124, 58, 237, 0.9)' : 'rgba(10, 12, 20, 0.8)'
       ctx.beginPath()
       if (ctx.roundRect) {
         ctx.roundRect(node.x - textW / 2 - pad, node.y + r + 1, textW + pad * 2, fontSize + pad * 2, 2 / globalScale)
@@ -354,41 +426,71 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
       }
       ctx.fill()
 
-      ctx.fillStyle = isMatch ? '#fbbf24' : isHovered ? '#fff' : 'rgba(255,255,255,0.85)'
+      ctx.fillStyle = isMatch ? '#fbbf24' : isFocused ? '#fff' : isHovered ? '#fff' : 'rgba(255,255,255,0.85)'
       ctx.fillText(text, node.x, node.y + r + 1 + pad)
     }
-  }, [accentColor, hoveredNode])
+  }, [accentColor, hoveredNode, focusedNode])
 
-  // ── Edge renderer: always visible, colored, thicker ──
+  // ── Edge renderer: highlight connected edges on node hover ──
   const paintLink = useCallback((link, ctx, globalScale) => {
     const start = link.source
     const end = link.target
 
-    // Edge line — visible at default zoom
+    const srcId = typeof link.source === 'object' ? link.source.id : link.source
+    const tgtId = typeof link.target === 'object' ? link.target.id : link.target
+    const isConnectedHover = hoveredNode && (srcId === hoveredNode || tgtId === hoveredNode)
+    const isConnectedFocus = focusedNode && (srcId === focusedNode.id || tgtId === focusedNode.id)
+    const isHighlighted = isConnectedHover || isConnectedFocus
+
     ctx.beginPath()
     ctx.moveTo(start.x, start.y)
     ctx.lineTo(end.x, end.y)
-    ctx.strokeStyle = `${accentColor}55`
-    ctx.lineWidth = Math.max(0.6, (link.weight || 1) * 0.5)
-    ctx.stroke()
 
-    // Weight label on zoom
-    if (globalScale > 3.0 && link.weight && link.weight > 1) {
+    if (isHighlighted) {
+      ctx.strokeStyle = isConnectedFocus ? `${accentColor}dd` : `${accentColor}cc`
+      ctx.lineWidth = Math.max(1.5, (link.weight || 1) * 1.2)
+      ctx.shadowColor = accentColor
+      ctx.shadowBlur = isConnectedFocus ? 10 : 6
+    } else {
+      ctx.strokeStyle = (hoveredNode || focusedNode) ? `${accentColor}18` : `${accentColor}55`
+      ctx.lineWidth = Math.max(0.6, (link.weight || 1) * 0.5)
+    }
+    ctx.stroke()
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+
+    // Weight label on zoom, hover, or focus
+    if ((globalScale > 3.0 || isHighlighted) && link.weight && link.weight > 1) {
       const mx = (start.x + end.x) / 2
       const my = (start.y + end.y) / 2
       const fs = Math.max(6, 8 / globalScale)
       ctx.font = `${fs}px Inter, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillStyle = 'rgba(148,163,184,0.5)'
+      ctx.fillStyle = isHighlighted ? 'rgba(255,255,255,0.8)' : 'rgba(148,163,184,0.5)'
       ctx.fillText(link.weight.toFixed(1), mx, my)
     }
-  }, [accentColor])
+  }, [accentColor, hoveredNode, focusedNode])
 
   // Toolbar
   const handleZoomIn = () => graphRef.current?.zoom(graphRef.current.zoom() * 1.5, 300)
   const handleZoomOut = () => graphRef.current?.zoom(graphRef.current.zoom() / 1.5, 300)
-  const handleFit = () => graphRef.current?.zoomToFit(400, 30)
+  const handleFit = () => { graphRef.current?.zoomToFit(400, 30); setFocusedNode(null) }
+
+  // Node click → zoom to node + show info overlay
+  const handleNodeClick = useCallback((node) => {
+    setFocusedNode(prev => prev?.id === node.id ? null : node)
+    // Zoom to the clicked node
+    graphRef.current?.centerAt(node.x, node.y, 600)
+    graphRef.current?.zoom(4, 600)
+  }, [])
+
+  // Double click → unpin a node
+  const handleNodeDoubleClick = useCallback((node) => {
+    node.fx = undefined
+    node.fy = undefined
+    toast('📌 Node unpinned!', { icon: '🔓', duration: 1500 })
+  }, [])
 
   if (!documentId) {
     return (
@@ -424,7 +526,7 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
           </div>
         </div>
 
-        <div className={styles.graphBody} ref={containerRef}>
+        <div className={styles.graphBody} ref={containerRef} style={{ position: 'relative' }}>
           {isLoading && (
             <div className={styles.graphEmpty}>
               <Loader size={28} className="animate-spin" style={{ color: accentColor }}/>
@@ -444,30 +546,100 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
             </div>
           )}
           {!isLoading && !isError && forceData.nodes.length > 0 && (
-            <ForceGraph2D
-              ref={graphRef}
-              graphData={forceData}
-              width={dimensions.width}
-              height={dimensions.height}
-              backgroundColor="transparent"
-              nodeCanvasObject={paintNode}
-              nodePointerAreaPaint={(node, color, ctx) => {
-                const r = Math.max(3, (node.weight || 1) * 2.2)
-                ctx.beginPath()
-                ctx.arc(node.x, node.y, r, 0, 2 * Math.PI)
-                ctx.fillStyle = color
-                ctx.fill()
-              }}
-              onNodeHover={node => setHoveredNode(node?.id || null)}
-              linkCanvasObject={paintLink}
-              linkDirectionalParticles={0}
-              cooldownTicks={80}
-              d3AlphaDecay={0.04}
-              d3VelocityDecay={0.3}
-              enableZoomInteraction={true}
-              enablePanInteraction={true}
-              onEngineStop={() => graphRef.current?.zoomToFit(400, 30)}
-            />
+            <>
+              <ForceGraph2D
+                ref={graphRef}
+                graphData={forceData}
+                width={dimensions.width}
+                height={dimensions.height}
+                backgroundColor="transparent"
+                nodeCanvasObject={paintNode}
+                nodePointerAreaPaint={(node, color, ctx) => {
+                  const r = Math.max(3, (node.weight || 1) * 2.2)
+                  ctx.beginPath()
+                  ctx.arc(node.x, node.y, r, 0, 2 * Math.PI)
+                  ctx.fillStyle = color
+                  ctx.fill()
+                }}
+                onNodeHover={node => {
+                  setHoveredNode(node?.id || null)
+                  document.body.style.cursor = node ? 'pointer' : 'default'
+                }}
+                onNodeClick={handleNodeClick}
+                onBackgroundClick={() => setFocusedNode(null)}
+                onNodeDrag={node => {
+                  node.fx = node.x
+                  node.fy = node.y
+                }}
+                onNodeDragEnd={node => {
+                  node.fx = node.x
+                  node.fy = node.y
+                }}
+                linkCanvasObject={paintLink}
+                linkDirectionalParticles={link => {
+                  const srcMatch = forceData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))?.isMatch
+                  const tgtMatch = forceData.nodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target))?.isMatch
+                  return (srcMatch && tgtMatch) ? 4 : 1
+                }}
+                linkDirectionalParticleWidth={link => {
+                  const srcMatch = forceData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))?.isMatch
+                  const tgtMatch = forceData.nodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target))?.isMatch
+                  return (srcMatch && tgtMatch) ? 2.5 : 1
+                }}
+                linkDirectionalParticleSpeed={0.005}
+                linkDirectionalParticleColor={link => {
+                  const srcMatch = forceData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))?.isMatch
+                  return srcMatch ? '#f59e0b' : accentColor + '66'
+                }}
+                cooldownTicks={80}
+                d3AlphaDecay={0.04}
+                d3VelocityDecay={0.3}
+                enableZoomInteraction={true}
+                enablePanInteraction={true}
+                onEngineStop={() => graphRef.current?.zoomToFit(400, 30)}
+              />
+
+              {/* ── Focused Node Info Overlay ── */}
+              <AnimatePresence>
+                {focusedNode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className={styles.nodeOverlay}
+                    style={{ borderColor: focusedNode.isMatch ? '#f59e0b44' : accentColor + '44' }}
+                  >
+                    <div className={styles.nodeOverlayDot} style={{ background: focusedNode.isMatch ? '#f59e0b' : focusedNode.color || accentColor }}/>
+                    <div className={styles.nodeOverlayInfo}>
+                      <div className={styles.nodeOverlayName}>
+                        {focusedNode.label}
+                        {focusedNode.isMatch && <span className={styles.nodeOverlayBadge}>⭐ Match</span>}
+                        {focusedNode.fx !== undefined && <span className={styles.nodeOverlayPin}>📌</span>}
+                      </div>
+                      <div className={styles.nodeOverlayMeta}>
+                        Weight: {focusedNode.weight?.toFixed(1)} · 
+                        {' '}{getNodeConnections(focusedNode.id)} connections · 
+                        {' '}{getConnectedLabels(focusedNode.id).join(', ')}
+                      </div>
+                    </div>
+                    <div className={styles.nodeOverlayActions}>
+                      {focusedNode.fx !== undefined && (
+                        <button onClick={() => { focusedNode.fx = undefined; focusedNode.fy = undefined; setFocusedNode(null) }}
+                          className={styles.nodeOverlayBtn} title="Unpin node">🔓</button>
+                      )}
+                      <button onClick={() => setFocusedNode(null)} className={styles.nodeOverlayBtn} title="Dismiss">✕</button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* ── Interaction hint ── */}
+              {!focusedNode && !hoveredNode && (
+                <div className={styles.graphHint}>
+                  Click nodes to explore · Drag to pin · Double-click to unpin
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -493,12 +665,56 @@ function GraphPanel({ documentId, label, accentColor, matchingKeywords, palette 
 /* ── Algorithm list ──────────────────────────────────────────────────────────── */
 const ALGOS = ['node_overlap','edge_similarity','subgraph','graph_edit_distance']
 
+/* ── Highlight level → color ─────────────────────────────────────────────────── */
+const LEVEL_COLORS = {
+  high:    { bg:'rgba(239,68,68,0.15)', border:'#ef4444', text:'#fca5a5' },
+  partial: { bg:'rgba(245,158,11,0.12)', border:'#f59e0b', text:'#fde68a' },
+  low:     { bg:'rgba(148,163,184,0.08)', border:'#64748b', text:'#94a3b8' },
+}
+
+/* ── Side-by-side highlighting panel ─────────────────────────────────────────── */
+function HighlightPanel({ sentences, label, accentColor, scrollRef, onScroll }) {
+  if (!sentences?.length) return null
+  return (
+    <div className={styles.hlPanel}>
+      <div className={styles.hlHeader} style={{ borderColor: accentColor + '33' }}>
+        <FileText size={14} style={{ color: accentColor }}/>
+        <span>{label}</span>
+        <span className={styles.hlCount}>{sentences.length} sentences</span>
+      </div>
+      <div className={styles.hlBody} ref={scrollRef} onScroll={onScroll}>
+        {sentences.map((s, i) => {
+          const colors = s.level ? LEVEL_COLORS[s.level] : null
+          return (
+            <div key={i} className={styles.hlSentence}
+              style={colors ? {
+                background: colors.bg,
+                borderLeft: `3px solid ${colors.border}`,
+              } : {}}>
+              <span className={styles.hlIndex}>#{i+1}</span>
+              <span>{s.text}</span>
+              {s.level && (
+                <span className={styles.hlBadge} style={{ color: colors.border, background: colors.bg }}>
+                  {s.level} · {(s.similarity * 100).toFixed(0)}%
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ── Main Compare page ───────────────────────────────────────────────────────── */
 export default function Compare() {
   const [docA, setDocA] = useState('')
   const [docB, setDocB] = useState('')
   const [algo, setAlgo] = useState('node_overlap')
   const [result, setResult] = useState(null)
+  const scrollRefA = useRef(null)
+  const scrollRefB = useRef(null)
+  const syncing = useRef(false)
 
   const { data } = useQuery({ queryKey:['documents'], queryFn:()=>documentAPI.list().then(r=>r.data) })
   const docs = data?.documents || []
@@ -511,12 +727,50 @@ export default function Compare() {
 
   const canCompare = docA && docB && docA !== docB && !isPending
   const matchingKw = result?.matching_keywords || []
+  const matchingSubgraph = result?.matching_subgraph || null
+
+  // Synchronized scrolling between highlight panels
+  const handleScrollSync = (source) => {
+    if (syncing.current) return
+    syncing.current = true
+    const src = source === 'a' ? scrollRefA.current : scrollRefB.current
+    const dst = source === 'a' ? scrollRefB.current : scrollRefA.current
+    if (src && dst) {
+      const ratio = src.scrollTop / (src.scrollHeight - src.clientHeight || 1)
+      dst.scrollTop = ratio * (dst.scrollHeight - dst.clientHeight || 1)
+    }
+    requestAnimationFrame(() => { syncing.current = false })
+  }
+
+  // PDF download
+  const handleDownloadPdf = async () => {
+    if (!result?.comparison?.id) return
+    try {
+      const response = await plagiarismAPI.downloadPdf(result.comparison.id)
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `report_${result.comparison.id.slice(0,8)}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      toast.success('PDF downloaded!')
+    } catch {
+      toast.error('Failed to download PDF')
+    }
+  }
 
   return (
     <PageWrapper>
       <div className="page-container">
-        <h2 style={{ marginBottom:'0.5rem' }}>Compare Documents</h2>
-        <p style={{ color:'var(--text-muted)', marginBottom:'2rem' }}>Select two READY documents and run graph-based plagiarism detection.</p>
+        <motion.h1 
+          className="text-4xl font-black mb-3 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] bg-clip-text text-transparent"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          Compare Documents
+        </motion.h1>
+        <p style={{ color:'var(--text-muted)', marginBottom:'2rem' }}>Select two READY documents and run graph-based plagiarism detection with AI-powered semantic analysis.</p>
 
         {/* ── Graph Visualization Row ── */}
         <motion.div className={styles.graphRow}
@@ -579,7 +833,7 @@ export default function Compare() {
               {isPending && (
                 <motion.div key="loading" className={styles.resultIdle} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
                   <Loader size={48} className="animate-spin" style={{ color:'var(--accent-primary)' }}/>
-                  <p>Analyzing graphs…</p>
+                  <p>Analyzing graphs + semantic AI…</p>
                 </motion.div>
               )}
               {result && !isPending && (
@@ -587,8 +841,12 @@ export default function Compare() {
                   <ScoreMeter pct={result.comparison?.plagiarism_percentage || 0}/>
                   <div className={styles.resultDetails}>
                     <div className={styles.resultRow}>
-                      <span>Similarity Score</span>
+                      <span>Graph Similarity</span>
                       <strong>{((result.comparison?.similarity_score||0)*100).toFixed(2)}%</strong>
+                    </div>
+                    <div className={styles.resultRow}>
+                      <span>🧠 Semantic AI Score</span>
+                      <strong style={{ color:'#06b6d4' }}>{((result.semantic_score||0)*100).toFixed(1)}%</strong>
                     </div>
                     <div className={styles.resultRow}>
                       <span>Algorithm</span>
@@ -599,10 +857,20 @@ export default function Compare() {
                       <strong>{result.matching_keywords?.length || 0}</strong>
                     </div>
                     <div className={styles.resultRow}>
-                      <span>Matching Sentences</span>
-                      <strong>{result.matching_sentences?.length || 0}</strong>
+                      <span>Matched Sentences</span>
+                      <strong>{result.sentence_matches?.length || 0}</strong>
+                    </div>
+                    <div className={styles.resultRow}>
+                      <span>AI Paraphrases</span>
+                      <strong style={{ color:'#f59e0b' }}>{result.semantic_matches?.length || 0}</strong>
                     </div>
                   </div>
+
+                  {/* Download PDF button */}
+                  <button className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.65rem', marginTop:'0.75rem', fontSize:'0.85rem' }}
+                    onClick={handleDownloadPdf}>
+                    📄 Download PDF Report
+                  </button>
 
                   {result.matching_keywords?.length > 0 && (
                     <div className={styles.keywords}>
@@ -615,11 +883,20 @@ export default function Compare() {
                     </div>
                   )}
 
-                  {result.matching_sentences?.length > 0 && (
-                    <div className={styles.sentences}>
-                      <h4>Matching Sentences</h4>
-                      {result.matching_sentences.slice(0,3).map((s,i) => (
-                        <div key={i} className={styles.sentItem}>{s}</div>
+                  {/* Semantic AI matches */}
+                  {result.semantic_matches?.length > 0 && (
+                    <div className={styles.sentences} style={{ marginTop:'1rem' }}>
+                      <h4>🧠 AI-Detected Paraphrases</h4>
+                      {result.semantic_matches.slice(0,3).map((m,i) => (
+                        <div key={i} className={styles.sentItem} style={{
+                          borderLeftColor: m.level === 'high' ? '#ef4444' : m.level === 'partial' ? '#f59e0b' : '#64748b'
+                        }}>
+                          <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginBottom:'0.3rem' }}>
+                            Similarity: <strong style={{ color: m.level === 'high' ? '#ef4444' : '#f59e0b' }}>{(m.similarity*100).toFixed(0)}%</strong>
+                          </div>
+                          <div style={{ fontSize:'0.78rem' }}>A: "{m.sentence_a?.slice(0,120)}"</div>
+                          <div style={{ fontSize:'0.78rem', marginTop:'0.2rem' }}>B: "{m.sentence_b?.slice(0,120)}"</div>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -628,7 +905,44 @@ export default function Compare() {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* ── Smart Highlighting: Side-by-Side ── */}
+        {result?.highlight_map && (
+          <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', margin:'2rem 0 1rem' }}>
+              <h3 style={{ margin:0 }}>🔍 Smart Highlighting</h3>
+              <div style={{ display:'flex', gap:'0.6rem', fontSize:'0.72rem' }}>
+                <span style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                  <span style={{ width:10, height:10, borderRadius:2, background:'rgba(239,68,68,0.3)', border:'1px solid #ef4444' }}/> High
+                </span>
+                <span style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                  <span style={{ width:10, height:10, borderRadius:2, background:'rgba(245,158,11,0.2)', border:'1px solid #f59e0b' }}/> Partial
+                </span>
+                <span style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                  <span style={{ width:10, height:10, borderRadius:2, background:'var(--bg-overlay)', border:'1px solid var(--border-subtle)' }}/> Clean
+                </span>
+              </div>
+            </div>
+            <div className={styles.hlGrid}>
+              <HighlightPanel
+                sentences={result.highlight_map.sentences_a}
+                label="Document A"
+                accentColor="#7c3aed"
+                scrollRef={scrollRefA}
+                onScroll={() => handleScrollSync('a')}
+              />
+              <HighlightPanel
+                sentences={result.highlight_map.sentences_b}
+                label="Document B"
+                accentColor="#06b6d4"
+                scrollRef={scrollRefB}
+                onScroll={() => handleScrollSync('b')}
+              />
+            </div>
+          </motion.div>
+        )}
       </div>
     </PageWrapper>
   )
 }
+

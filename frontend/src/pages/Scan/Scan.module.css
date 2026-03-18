@@ -1,0 +1,117 @@
+/* ── Scan page styles ─────────────────────────────────────────────── */
+
+.configPanel {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 900px) { .configPanel { grid-template-columns: 1fr; } }
+
+.configLeft, .configRight {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.selectWrap { position: relative; }
+.selectBtn {
+  width: 100%; display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  background: var(--bg-overlay); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.88rem;
+  cursor: pointer; text-align: left;
+  transition: border-color var(--transition-fast);
+}
+.selectBtn:hover { border-color: var(--accent-primary); }
+
+.dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--bg-elevated); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); z-index: 50; overflow: hidden;
+  box-shadow: var(--shadow-md); max-height: 250px; overflow-y: auto;
+}
+.dropItem {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.65rem 1rem; font-size: 0.86rem; color: var(--text-secondary);
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.dropItem:hover { background: var(--bg-hover); color: var(--text-primary); }
+.dropItemActive { color: var(--accent-primary); background: rgba(124,58,237,0.08); }
+.dropEmpty { padding: 1rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+
+.algoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.algoBtn {
+  padding: 0.5rem 0.75rem; border-radius: var(--radius-md);
+  background: var(--bg-overlay); border: 1px solid var(--border-default);
+  color: var(--text-secondary); font-size: 0.78rem; font-family: var(--font-mono);
+  cursor: pointer; transition: all var(--transition-fast);
+}
+.algoBtn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.algoBtnActive { background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.4); color: #a78bfa; }
+
+.idle {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; height: 200px; color: var(--text-muted); text-align: center;
+}
+
+.summaryRow { display: flex; gap: 1rem; flex-wrap: wrap; }
+.summaryCard {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-overlay); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); flex: 1; min-width: 120px;
+}
+.summaryVal { font-size: 1.4rem; font-weight: 800; }
+.summaryLabel { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ── Ranked Results ── */
+.rankList {
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+
+.rankItem {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all 0.15s;
+}
+.rankItem:hover { border-color: var(--border-default); box-shadow: var(--shadow-sm); }
+
+.rankBadge {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 800;
+  flex-shrink: 0;
+}
+
+.rankInfo { flex: 1; min-width: 0; }
+.rankName { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rankMeta { font-size: 0.72rem; color: var(--text-muted); }
+
+.rankScore { font-size: 1rem; font-weight: 800; flex-shrink: 0; min-width: 55px; text-align: right; }
+
+.rankBar { width: 80px; height: 6px; background: var(--bg-overlay); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.rankBarFill { height: 100%; border-radius: 3px; }
+
+/* ── Scan History ── */
+.historyList { display: flex; flex-direction: column; gap: 0.4rem; }
+.historyItem {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
