@@ -197,7 +197,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   padding: 1.5rem;
@@ -371,9 +371,9 @@
   bottom: 8px;
   left: 8px;
   right: 8px;
-  background: rgba(10, 12, 20, 0.92);
+  background: var(--bg-surface);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(124, 58, 237, 0.25);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 0.6rem 0.75rem;
   display: flex;
@@ -400,7 +400,7 @@
 .nodeOverlayName {
   font-weight: 700;
   font-size: 0.82rem;
-  color: #e2e8f0;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.4rem;

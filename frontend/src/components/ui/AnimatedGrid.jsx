@@ -10,6 +10,10 @@ export default function AnimatedGrid({
   const animationRef = useRef(null)
 
   useEffect(() => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light'
+    const finalLineColor = lineColor || (isLight ? 'rgba(71, 85, 105, 0.08)' : 'rgba(124, 58, 237, 0.15)')
+    const finalGlowColor = glowColor || (isLight ? 'rgba(124, 58, 237, 0.15)' : 'rgba(124, 58, 237, 0.4)')
+
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -30,7 +34,7 @@ export default function AnimatedGrid({
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Draw grid
-      ctx.strokeStyle = lineColor
+      ctx.strokeStyle = finalLineColor
       ctx.lineWidth = 1
 
       // Vertical lines
@@ -56,9 +60,9 @@ export default function AnimatedGrid({
         0,
         mouseRef.current.x,
         mouseRef.current.y,
-        200
+        250
       )
-      gradient.addColorStop(0, glowColor)
+      gradient.addColorStop(0, finalGlowColor)
       gradient.addColorStop(1, 'transparent')
 
       ctx.fillStyle = gradient

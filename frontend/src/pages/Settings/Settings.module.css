@@ -3,10 +3,10 @@
    ───────────────────────────────────────────────────────── */
 
 .section {
-  background: rgba(18, 14, 38, 0.55);
+  background: var(--bg-surface);
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 1.75rem;
   margin-bottom: 1.25rem;
@@ -55,10 +55,10 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1.25rem 1.75rem;
-  background: rgba(12, 8, 24, 0.50);
+  background: var(--bg-overlay);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(255, 255, 255, 0.10);
+  border: 1.5px solid var(--border-default);
   border-radius: var(--radius-lg);
   cursor: pointer;
   color: var(--text-secondary);
@@ -81,7 +81,7 @@
   border-color: var(--accent-primary);
   background: rgba(124, 58, 237, 0.1);
   color: var(--text-primary);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15), 0 4px 20px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15), var(--shadow-glow);
 }
 
 .themeIcon {
@@ -106,10 +106,10 @@
   align-items: center;
   gap: 1rem;
   padding: 1.25rem;
-  background: rgba(12, 8, 26, 0.50);
+  background: var(--bg-surface);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   transition: border-color var(--transition-fast);
 }
@@ -122,7 +122,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,7 +130,7 @@
   font-weight: 800;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+  box-shadow: var(--shadow-glow);
 }
 
 .profileName {

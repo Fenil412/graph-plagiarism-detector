@@ -175,6 +175,7 @@ export default function Dashboard() {
     group.add(sphere)
 
     // Text label using canvas sprite
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light'
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     canvas.width = 256
@@ -182,7 +183,7 @@ export default function Dashboard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Background pill
-    ctx.fillStyle = 'rgba(10, 12, 20, 0.8)'
+    ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(10, 12, 20, 0.8)'
     const text = node.name || `Node ${node.id}`
     ctx.font = 'bold 28px Inter, Arial, sans-serif'
     const textW = ctx.measureText(text).width
@@ -191,6 +192,10 @@ export default function Dashboard() {
     ctx.beginPath()
     ctx.roundRect(pillX, 8, pillW, 46, 12)
     ctx.fill()
+    if (isLight) {
+      ctx.strokeStyle = 'rgba(124, 58, 237, 0.2)'
+      ctx.stroke()
+    }
 
     // Text
     ctx.fillStyle = node.color
@@ -316,7 +321,8 @@ export default function Dashboard() {
       data: statusDataArr,
       backgroundColor: statusColors,
       hoverBackgroundColor: statusColors.map(c => c + 'dd'),
-      borderWidth: 0,
+      borderWidth: theme === 'light' ? 2 : 0,
+      borderColor: '#fff',
       hoverOffset: 12,
       hoverBorderWidth: 3,
       hoverBorderColor: '#fff',
@@ -388,12 +394,12 @@ export default function Dashboard() {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-        titleColor: '#fff',
+        backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        titleColor: theme === 'dark' ? '#fff' : '#0f172a',
         titleFont: { size: 13, weight: 'bold' },
-        bodyColor: '#cbd5e1',
+        bodyColor: theme === 'dark' ? '#cbd5e1' : '#475569',
         bodyFont: { size: 12 },
-        borderColor: 'rgba(124, 58, 237, 0.4)',
+        borderColor: theme === 'dark' ? 'rgba(124, 58, 237, 0.4)' : 'rgba(124, 58, 237, 0.2)',
         borderWidth: 1,
         padding: 14,
         cornerRadius: 10,
@@ -664,7 +670,7 @@ export default function Dashboard() {
              ))}
            </div>
 
-           <div style={{ width: '100%', height: '400px', background: '#090a0f', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+           <div style={{ width: '100%', height: '400px', background: theme === 'dark' ? '#090a0f' : '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
               <ForceGraph3D
                 ref={graphRef}
                 graphData={graphData}
@@ -672,10 +678,10 @@ export default function Dashboard() {
                 nodeThreeObjectExtend={false}
                 nodeRelSize={3}
                 linkWidth={link => link.value > 0.4 ? 1.8 : 1}
-                linkOpacity={0.5}
+                linkOpacity={theme === 'dark' ? 0.5 : 0.3}
                 linkColor={link => {
                   const src = graphData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source))
-                  return src ? src.color + '88' : 'rgba(124, 58, 237, 0.35)'
+                  return src ? src.color + (theme === 'dark' ? '88' : '44') : 'rgba(124, 58, 237, 0.35)'
                 }}
                 linkDirectionalParticles={2}
                 linkDirectionalParticleWidth={1.5}
@@ -693,12 +699,12 @@ export default function Dashboard() {
                     node,
                     1200
                   )
-                  toast(`🔍 ${node.name} (${node.groupName})`, { icon: '🧠', style: { background: '#0f172a', color: '#e2e8f0', border: '1px solid ' + node.color } })
+                  toast(`🔍 ${node.name} (${node.groupName})`, { icon: '🧠', style: { background: theme === 'dark' ? '#0f172a' : '#fff', color: theme === 'dark' ? '#e2e8f0' : '#0f172a', border: '1px solid ' + node.color } })
                 }}
                 onNodeHover={(node) => {
                   document.body.style.cursor = node ? 'pointer' : 'default'
                 }}
-                backgroundColor="#090a0f"
+                backgroundColor={theme === 'dark' ? '#090a0f' : '#f8fafc'}
                 showNavInfo={false}
                 width={document.body.clientWidth - (document.body.clientWidth > 768 ? 320 : 64)}
                 height={400}
@@ -708,9 +714,9 @@ export default function Dashboard() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  style={{
+                   style={{
                     position: 'absolute', bottom: 12, left: 12, right: 12,
-                    background: 'rgba(10, 12, 20, 0.92)', backdropFilter: 'blur(8px)',
+                    background: theme === 'dark' ? 'rgba(10, 12, 20, 0.92)' : 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(8px)',
                     border: `1px solid ${focusedNode.color}44`,
                     borderRadius: 10, padding: '0.75rem 1rem',
                     display: 'flex', alignItems: 'center', gap: '0.75rem',

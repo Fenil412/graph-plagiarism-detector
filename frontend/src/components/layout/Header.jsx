@@ -91,11 +91,11 @@ export default function Header({ sidebarWidth = 280 }) {
       style={{ 
         left: isMobile ? '0' : `${sidebarWidth}px`,
         width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
-        background: 'rgba(8, 5, 20, 0.45)',
+        background: 'var(--bg-surface)',
         backdropFilter: 'blur(24px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+        borderBottom: '1px solid var(--border-subtle)',
+        boxShadow: 'var(--shadow-md)',
       }}
     >
       <div className="flex items-center gap-2">

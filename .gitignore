@@ -136,6 +136,10 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .envrc
 .venv
 env/
@@ -144,7 +148,40 @@ ENV/
 env.bak/
 venv.bak/
 
-# Spyder project settings
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Vite / Frontend build
+dist/
+dist-ssr/
+*.local
+frontend/dist/
+frontend/node_modules/
+
+# Prisma
+backend/prisma/*.sqlite
+backend/prisma/*.sqlite-journal
+
+# Logs
+backend/logs/*.log
+logs/
+*.log
+
+# Dashboard / Cache
+.cache/
+.vite/
+.eslintcache
+
+# Visual Studio Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
 .spyderproject
 .spyproject
 

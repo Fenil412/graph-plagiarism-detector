@@ -54,7 +54,7 @@ export default function GalaxyBackground({ opacity = 1 }) {
       The slight z-offset gives planets a 3D perspective "depth" feel.
     */
     const camera = new THREE.PerspectiveCamera(80, el.clientWidth / el.clientHeight, 0.1, 8000)
-    camera.position.set(0, 120, 18)
+    camera.position.set(0, 105, 16)
     camera.lookAt(0, 0, 0)
 
     const rand  = (a, b) => Math.random() * (b - a) + a
@@ -87,7 +87,7 @@ export default function GalaxyBackground({ opacity = 1 }) {
     starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3))
     starGeo.setAttribute('color',    new THREE.BufferAttribute(sCol, 3))
     const starMat = new THREE.PointsMaterial({
-      size: 10.0, sizeAttenuation: true,
+      size: 4.5, sizeAttenuation: true,
       vertexColors: true, transparent: true, opacity: 0.85,
       map: disc, alphaTest: 0.01, depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -125,7 +125,7 @@ export default function GalaxyBackground({ opacity = 1 }) {
     galaxyGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3))
     galaxyGeo.setAttribute('color',    new THREE.BufferAttribute(gCol, 3))
     const galaxyMat = new THREE.PointsMaterial({
-      size: 14.0, sizeAttenuation: true,
+      size: 6.0, sizeAttenuation: true,
       vertexColors: true, transparent: true, opacity: 0.70,
       map: disc, alphaTest: 0.01, depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -169,7 +169,7 @@ export default function GalaxyBackground({ opacity = 1 }) {
     ════════════════════════════════════════════════════════ */
 
     /* ── SUN ──────────────────────────────────────────────── */
-    const SUN_RADIUS = 7
+    const SUN_RADIUS = 9
     const sunMesh = new THREE.Mesh(
       new THREE.SphereGeometry(SUN_RADIUS, 64, 64),
       new THREE.MeshBasicMaterial({ color: 0xffee44 })
@@ -205,14 +205,14 @@ export default function GalaxyBackground({ opacity = 1 }) {
       so all 8 are spread around at load time.
     */
     const PLANETS = [
-      { name:'Mercury', R: 14,  sz:0.60, col:0xbbbbbb, spd:2.40, tilt:0.01, incX: 0.05, incZ: 0.02 },
-      { name:'Venus',   R: 22,  sz:1.00, col:0xe8cda0, spd:1.80, tilt:0.05, incX: -0.04, incZ: 0.06 },
-      { name:'Earth',   R: 32,  sz:1.10, col:0x2299dd, spd:1.30, tilt:0.41, incX: 0.08, incZ: -0.03 },
-      { name:'Mars',    R: 43,  sz:0.78, col:0xee4422, spd:0.95, tilt:0.44, incX: -0.10, incZ: 0.05 },
-      { name:'Jupiter', R: 57,  sz:2.80, col:0xc8883a, spd:0.50, tilt:0.05, incX: 0.03, incZ: 0.12 },
-      { name:'Saturn',  R: 71,  sz:2.25, col:0xe2c280, spd:0.30, tilt:0.47, incX: 0.15, incZ: -0.08, rings:true },
-      { name:'Uranus',  R: 84,  sz:1.60, col:0x55dddd, spd:0.16, tilt:1.71, incX: -0.12, incZ: 0.10 },
-      { name:'Neptune', R: 98,  sz:1.50, col:0x2255ff, spd:0.09, tilt:0.49, incX: 0.06, incZ: -0.15 },
+      { name:'Mercury', R: 14,  sz:0.80, col:0xbbbbbb, spd:2.40, tilt:0.01, incX: 0.05, incZ: 0.02 },
+      { name:'Venus',   R: 22,  sz:1.30, col:0xe8cda0, spd:1.80, tilt:0.05, incX: -0.04, incZ: 0.06 },
+      { name:'Earth',   R: 32,  sz:1.45, col:0x2299dd, spd:1.30, tilt:0.41, incX: 0.08, incZ: -0.03 },
+      { name:'Mars',    R: 43,  sz:1.05, col:0xee4422, spd:0.95, tilt:0.44, incX: -0.10, incZ: 0.05 },
+      { name:'Jupiter', R: 57,  sz:3.60, col:0xc8883a, spd:0.50, tilt:0.05, incX: 0.03, incZ: 0.12 },
+      { name:'Saturn',  R: 71,  sz:2.90, col:0xe2c280, spd:0.30, tilt:0.47, incX: 0.15, incZ: -0.08, rings:true },
+      { name:'Uranus',  R: 84,  sz:2.10, col:0x55dddd, spd:0.16, tilt:1.71, incX: -0.12, incZ: 0.10 },
+      { name:'Neptune', R: 98,  sz:1.90, col:0x2255ff, spd:0.09, tilt:0.49, incX: 0.06, incZ: -0.15 },
     ]
 
     // Accent color per planet for orbit paths

@@ -5,9 +5,9 @@ export default function StatCard({ title, label, value, icon: Icon, color, trend
 
   return (
     <div 
-      className="border border-[rgba(255,255,255,0.08)] rounded-2xl p-5 flex items-start gap-4 transition-all duration-250 hover:border-[rgba(124,58,237,0.35)] hover:shadow-lg hover:shadow-[rgba(124,58,237,0.15)]"
+      className="border border-[var(--border-subtle)] rounded-2xl p-5 flex items-start gap-4 transition-all duration-250 hover:border-[var(--border-default)] hover:shadow-lg hover:shadow-[var(--shadow-glow)]"
       style={{ 
-        background: 'rgba(16, 12, 34, 0.55)',
+        background: 'var(--bg-surface)',
         backdropFilter: 'blur(18px) saturate(1.4)',
         WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
       }}

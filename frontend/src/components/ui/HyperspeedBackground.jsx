@@ -30,7 +30,8 @@ export default function HyperspeedBackground({ starCount = 200, speed = 2 }) {
     }))
 
     const animate = () => {
-      ctx.fillStyle = 'rgba(10, 10, 20, 0.2)'
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light'
+      ctx.fillStyle = isLight ? 'rgba(248, 250, 252, 0.2)' : 'rgba(10, 10, 20, 0.2)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       starsRef.current.forEach((star) => {
@@ -48,11 +49,16 @@ export default function HyperspeedBackground({ starCount = 200, speed = 2 }) {
 
         if (star.prevX !== 0) {
           const gradient = ctx.createLinearGradient(star.prevX, star.prevY, px, py)
-          gradient.addColorStop(0, 'rgba(124, 58, 237, 0)')
-          gradient.addColorStop(1, 'rgba(124, 58, 237, 0.8)')
+          if (isLight) {
+            gradient.addColorStop(0, 'rgba(124, 58, 237, 0)')
+            gradient.addColorStop(1, 'rgba(124, 58, 237, 0.4)')
+          } else {
+            gradient.addColorStop(0, 'rgba(124, 58, 237, 0)')
+            gradient.addColorStop(1, 'rgba(124, 58, 237, 0.8)')
+          }
 
           ctx.strokeStyle = gradient
-          ctx.lineWidth = (1 - star.z / canvas.width) * 3
+          ctx.lineWidth = (1 - star.z / canvas.width) * (isLight ? 2 : 3)
           ctx.beginPath()
           ctx.moveTo(star.prevX, star.prevY)
           ctx.lineTo(px, py)

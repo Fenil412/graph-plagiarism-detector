@@ -84,11 +84,11 @@ export default function Sidebar({ onCollapseChange }) {
           isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
         style={{
-          background: 'rgba(6, 4, 16, 0.55)',
+          background: 'var(--bg-surface)',
           backdropFilter: 'blur(28px) saturate(1.6)',
           WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '4px 0 40px rgba(0,0,0,0.4), inset -1px 0 0 rgba(255,255,255,0.04)',
+          borderRight: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-lg)',
         }}
         animate={{ width: isCollapsed ? '88px' : '280px' }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}

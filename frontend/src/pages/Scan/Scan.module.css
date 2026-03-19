@@ -17,13 +17,15 @@
 
 .configLeft,
 .configRight {
-  background: rgba(18, 14, 36, 0.55);
+  background: var(--bg-surface);
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-xl);
-  padding: 1.75rem;
-  transition: border-color var(--transition-normal);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.375rem;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
 }
 
 .configLeft:hover,
@@ -51,10 +53,10 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
-  background: rgba(10, 6, 22, 0.50);
+  background: var(--bg-overlay);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.9rem;
@@ -74,14 +76,14 @@
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: rgba(14, 10, 28, 0.88);
+  background: var(--bg-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   z-index: 50;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   max-height: 250px;
   overflow-y: auto;
 }
@@ -175,16 +177,18 @@
 .summaryCard {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
-  padding: 1.125rem 1.375rem;
-  background: rgba(16, 12, 34, 0.55);
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   flex: 1;
-  min-width: 140px;
+  min-width: 180px;
   transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
 }
 
 .summaryCard:hover {
@@ -221,10 +225,10 @@
   align-items: center;
   gap: 0.875rem;
   padding: 0.9rem 1.125rem;
-  background: rgba(14, 10, 30, 0.50);
+  background: var(--bg-surface);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   transition: all var(--transition-normal);
   position: relative;
@@ -305,10 +309,10 @@
   align-items: center;
   gap: 0.875rem;
   padding: 0.75rem 1.125rem;
-  background: rgba(12, 8, 24, 0.48);
+  background: var(--bg-base);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
 }
