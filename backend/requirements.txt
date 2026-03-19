@@ -27,11 +27,11 @@ networkx==3.3
 # NLP
 nltk==3.8.1
 
-# Semantic AI / TF-IDF similarity
-scikit-learn==1.4.2
+# ML / Similarity (FIXED)
 numpy==1.26.4
+scikit-learn==1.4.2
 
-# PDF Report Generation
+# PDF Report
 reportlab==4.1.0
 
 # Async / Utilities
@@ -40,3 +40,7 @@ aiofiles==23.2.1
 httpx==0.27.0
 loguru==0.7.2
 python-slugify==8.0.4
+
+# 🔥 IMPORTANT (ADD THESE)
+setuptools==70.0.0
+wheel==0.43.0
