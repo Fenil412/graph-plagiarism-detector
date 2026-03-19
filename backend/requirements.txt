@@ -28,8 +28,8 @@ networkx==3.3
 nltk==3.8.1
 
 # Semantic AI / TF-IDF similarity
-scikit-learn==1.4.2
 numpy==1.26.4
+scikit-learn==1.4.2
 
 # PDF Report Generation
 reportlab==4.1.0
