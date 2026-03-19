@@ -4,9 +4,7 @@ import { motion } from 'framer-motion'
 import { Network, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import toast from 'react-hot-toast'
-import Magnet from '@/components/ui/Magnet'
-import GradientText from '@/components/ui/GradientText'
-import Particles from '@/components/ui/Particles'
+import GalaxyBackground from '@/components/ui/GalaxyBackground'
 
 export default function Register() {
   const { register } = useAuth()
@@ -33,118 +31,177 @@ export default function Register() {
     }
   }
 
-  return (
-    <div className="relative min-h-screen flex items-center justify-center p-6 bg-[var(--bg-base)] overflow-hidden">
-      <Particles particleCount={40} opacity={0.3} className="-z-10" />
-      <div className="absolute inset-0 pointer-events-none -z-10" style={{ background: 'radial-gradient(circle at 20% 30%, rgba(124,58,237,0.15) 0%, transparent 55%), radial-gradient(circle at 80% 70%, rgba(6,182,212,0.1) 0%, transparent 55%)' }} />
+  // Password strength: 0-4 bars
+  const strength = Math.min(4, Math.floor(form.password.length / 3))
+  const strengthColors = ['#ef4444', '#f59e0b', '#f59e0b', '#10b981', '#10b981']
 
-      <Magnet padding={20} magnetStrength={8} innerClassName="w-full">
+  return (
+    /* FIX: position relative + overflow hidden contains the floating orbs */
+    <div className="auth-page">
+      {/* ── Galaxy / Space background ────────────── */}
+      <GalaxyBackground opacity={0.8} />
+
+      {/* Background orbs — z-index 0, pointer-events none, contained by parent */}
+      <motion.div
+        className="bg-orb bg-orb--purple bg-orb--lg"
+        style={{ top: '-80px', left: '-80px' }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="bg-orb bg-orb--cyan bg-orb--lg"
+        style={{ bottom: '-80px', right: '-80px' }}
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+      />
+
+      {/* Card — z-index 1 sits above orbs */}
+      <motion.div
+        className="auth-card"
+        initial={{ opacity: 0, scale: 0.95, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {/* Logo */}
         <motion.div
-          className="relative z-10 w-full max-w-[420px] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-3xl p-10 shadow-[var(--shadow-lg),var(--shadow-glow)] backdrop-blur-xl mx-auto"
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
+          className="auth-logo"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
         >
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-[42px] h-[42px] rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center text-white shadow-lg">
-              <Network size={24} />
+          <div className="auth-logo__icon">
+            <Network size={26} color="#fff" />
+          </div>
+          <span className="auth-logo__text">GraphPlag</span>
+        </motion.div>
+
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h1 className="auth-title">Create account</h1>
+          <p className="auth-subtitle">Start detecting plagiarism for free — no credit card required</p>
+        </motion.div>
+
+        {/* Form */}
+        <motion.form
+          className="auth-form"
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          {/* Full Name */}
+          <div className="form-group">
+            <label className="form-label">Full name</label>
+            <div className="input-wrapper">
+              <span className="input-icon">
+                <User size={18} />
+              </span>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="John Doe"
+                value={form.name}
+                onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+              />
             </div>
-            <span className="text-[1.3rem] font-black bg-gradient-to-br from-[#a78bfa] to-[#06b6d4] bg-clip-text text-transparent">
-              GraphPlag
-            </span>
           </div>
 
-          <h2 className="text-[1.8rem] font-bold mb-1.5 text-[var(--text-primary)]">
-            <GradientText animationSpeed={8}>Create account</GradientText>
-          </h2>
-          <p className="text-[var(--text-muted)] text-[15px] mb-8">Start detecting plagiarism for free</p>
+          {/* Email */}
+          <div className="form-group">
+            <label className="form-label">Email address</label>
+            <div className="input-wrapper">
+              <span className="input-icon">
+                <Mail size={18} />
+              </span>
+              <input
+                type="email"
+                className="input-field"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
 
-          <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13.5px] font-semibold text-[var(--text-secondary)]">Full name</label>
-              <div className="relative">
-                <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
-                <input
-                  type="text"
-                  className="input pl-10 h-12 text-[15px] bg-[var(--bg-overlay)] border-[var(--border-default)] rounded-xl focus:border-[var(--accent-primary)] focus:shadow-[0_0_0_3px_var(--accent-glow)] transition-all"
-                  placeholder="John Doe"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  required
-                />
-              </div>
+          {/* Password */}
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <div className="input-wrapper">
+              <span className="input-icon">
+                <Lock size={18} />
+              </span>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                className="input-field"
+                placeholder="Min. 8 characters"
+                value={form.password}
+                onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+                required
+              />
+              <button
+                type="button"
+                className="input-icon input-icon--right"
+                onClick={() => setShowPwd(v => !v)}
+                style={{ color: 'var(--text-muted)', transition: 'color 150ms' }}
+              >
+                {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13.5px] font-semibold text-[var(--text-secondary)]">Email address</label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
-                <input
-                  type="email"
-                  className="input pl-10 h-12 text-[15px] bg-[var(--bg-overlay)] border-[var(--border-default)] rounded-xl focus:border-[var(--accent-primary)] focus:shadow-[0_0_0_3px_var(--accent-glow)] transition-all"
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
+            {/* Password strength bars */}
+            {form.password && (
+              <motion.div
+                className="pwd-strength"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+              >
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="pwd-strength__bar"
+                    style={{
+                      background: i < strength ? strengthColors[strength] : 'rgba(255,255,255,0.1)',
+                      transition: 'background 300ms',
+                    }}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13.5px] font-semibold text-[var(--text-secondary)]">Password</label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  className="input pl-10 pr-10 h-12 text-[15px] bg-[var(--bg-overlay)] border-[var(--border-default)] rounded-xl focus:border-[var(--accent-primary)] focus:shadow-[0_0_0_3px_var(--accent-glow)] transition-all"
-                  placeholder="Min. 8 characters"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 bg-transparent border-none text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-0 flex cursor-none"
-                  onClick={() => setShowPwd((v) => !v)}
-                >
-                  {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+          {/* Submit */}
+          <motion.button
+            type="submit"
+            className="auth-submit"
+            disabled={loading}
+            whileHover={loading ? {} : { scale: 1.02, y: -2 }}
+            whileTap={loading ? {} : { scale: 0.98 }}
+          >
+            {loading ? (
+              <span className="spinner" />
+            ) : (
+              <>Create Account <ArrowRight size={18} /></>
+            )}
+          </motion.button>
+        </motion.form>
 
-              {form.password && (
-                <div className="flex gap-1.5 mt-2">
-                  {[...Array(4)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-1.5 flex-1 rounded-full transition-colors duration-300"
-                      style={{ background: form.password.length > i * 3 + 2 ? 'var(--success)' : 'var(--bg-overlay)' }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary w-full justify-center mt-3 h-12 text-[15px] rounded-xl shadow-lg shadow-[var(--accent-glow)] flex items-center gap-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>Create Account <ArrowRight size={18} /></>
-              )}
-            </button>
-          </form>
-
-          <p className="text-center text-[14px] text-[var(--text-muted)] mt-8">
-            Already have an account?{' '}
-            <Link to="/login" className="text-[var(--accent-primary)] font-semibold hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </motion.div>
-      </Magnet>
+        {/* Footer */}
+        <motion.p
+          className="auth-footer-text"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          Already have an account?{' '}
+          <Link to="/login" className="auth-footer-link">Sign in</Link>
+        </motion.p>
+      </motion.div>
     </div>
   )
 }

@@ -31,3 +31,16 @@ export { default as GradientCard } from './GradientCard'
 export { default as NeonButton } from './NeonButton'
 export { default as MorphingBlob } from './MorphingBlob'
 export { default as GlassCard } from './GlassCard'
+
+// ReactBits-inspired components
+export { default as ClickSpark } from './ClickSpark'
+export { default as AnimatedGrid } from './AnimatedGrid'
+export { default as GlowBorderCard } from './GlowBorderCard'
+export { default as HyperspeedBackground } from './HyperspeedBackground'
+export { default as TiltCard } from './TiltCard'
+export { default as CircularGallery } from './CircularGallery'
+export { default as GooeyNav } from './GooeyNav'
+export { default as BallpitBackground } from './BallpitBackground'
+
+// Component Styles Showcase
+export { default as ComponentStyles } from './ComponentStyles'

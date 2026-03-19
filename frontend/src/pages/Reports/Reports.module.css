@@ -1,36 +1,202 @@
-.summaryRow { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
-.summaryCard {
-  display: flex; align-items: center; gap: 1rem;
-  padding: 1.2rem 1.5rem;
-  background: var(--bg-elevated); border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg); flex: 1; min-width: 180px;
+/* ─────────────────────────────────────────────────────────
+   Reports.module.css — aligned with global design system
+   ───────────────────────────────────────────────────────── */
+
+.summaryRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
 }
-.summaryIcon { width: 44px; height: 44px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--c) 15%, transparent); display: flex; align-items: center; justify-content: center; color: var(--c); }
-.summaryVal { font-size: 1.6rem; font-weight: 800; }
-.summaryLabel { font-size: 0.78rem; color: var(--text-muted); }
-.reportGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
-.reportCard { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 1.25rem; transition: all var(--transition-fast); }
-.reportCard:hover { border-color: var(--border-default); box-shadow: var(--shadow-sm); }
-.reportHeader { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.75rem; }
-.reportIcon { width: 38px; height: 38px; border-radius: 10px; background: rgba(124,58,237,0.12); display: flex; align-items: center; justify-content: center; color: #a78bfa; flex-shrink: 0; }
-.reportName { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; word-break: break-all; }
-.reportDate { font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem; }
-.reportMeta { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; }
-.empty { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; background: var(--bg-elevated); border: 1px dashed var(--border-default); border-radius: var(--radius-lg); color: var(--text-muted); text-align: center; grid-column: 1/-1; }
+
+.summaryCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(16, 12, 34, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  flex: 1;
+  min-width: 180px;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.summaryCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.04), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.summaryCard:hover {
+  border-color: var(--border-default);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.summaryCard:hover::before {
+  opacity: 1;
+}
+
+.summaryIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c);
+  flex-shrink: 0;
+  transition: transform var(--transition-normal);
+}
+
+.summaryCard:hover .summaryIcon {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.summaryVal {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.summaryLabel {
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.reportCard {
+  background: rgba(14, 10, 30, 0.52);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  padding: 1.375rem;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.reportCard::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.reportCard:hover {
+  border-color: var(--border-default);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  transform: translateY(-4px);
+}
+
+.reportCard:hover::after {
+  opacity: 1;
+}
+
+.reportHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.reportIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a78bfa;
+  flex-shrink: 0;
+}
+
+.reportName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  word-break: break-word;
+}
+
+.reportDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reportMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  background: rgba(10, 6, 22, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px dashed rgba(124, 58, 237, 0.25);
+  border-radius: var(--radius-xl);
+  color: var(--text-muted);
+  text-align: center;
+  grid-column: 1 / -1;
+}
 
 .actionBtn {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   border: 1px solid var(--border-subtle);
-  background: var(--bg-overlay);
+  background: var(--bg-surface);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--transition-fast);
 }
+
 .actionBtn:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
-  background: rgba(124,58,237,0.08);
+  background: rgba(124, 58, 237, 0.08);
+  transform: scale(1.1);
 }
-

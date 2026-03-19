@@ -87,10 +87,15 @@ export default function Header({ sidebarWidth = 280 }) {
 
   return (
     <header 
-      className="fixed top-0 right-0 h-[var(--header-h)] bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] flex items-center justify-end px-6 z-[90] backdrop-blur-md transition-all duration-300 ease-in-out"
+      className="fixed top-0 right-0 h-[var(--header-h)] border-b border-[var(--border-subtle)] flex items-center justify-end px-6 z-[90] transition-all duration-300 ease-in-out"
       style={{ 
         left: isMobile ? '0' : `${sidebarWidth}px`,
-        width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`
+        width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
+        background: 'rgba(8, 5, 20, 0.45)',
+        backdropFilter: 'blur(24px) saturate(1.5)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
       }}
     >
       <div className="flex items-center gap-2">

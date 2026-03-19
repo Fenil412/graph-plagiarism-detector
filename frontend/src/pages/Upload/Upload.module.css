@@ -1,48 +1,195 @@
+/* ─────────────────────────────────────────────────────────
+   Upload.module.css — aligned with global design system
+   ───────────────────────────────────────────────────────── */
+
 .dropzone {
-  border: 2px dashed var(--border-default);
+  border: 2px dashed rgba(124, 58, 237, 0.35);
   border-radius: var(--radius-xl);
   padding: 3rem 2rem;
   text-align: center;
   cursor: pointer;
-  background: var(--bg-elevated);
+  background: rgba(16, 12, 32, 0.50);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.dropzone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.04), rgba(6, 182, 212, 0.04));
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  pointer-events: none;
+}
+
+.dropzone:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dropzone:hover::before {
+  opacity: 1;
+}
+
+.dropzone.active {
+  border-color: var(--accent-primary);
+  background: rgba(124, 58, 237, 0.06);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12), 0 8px 40px rgba(124, 58, 237, 0.15);
+}
+
+.dropContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.dropIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a78bfa;
+  margin-bottom: 0.5rem;
   transition: all var(--transition-normal);
 }
-.dropzone.active { border-color: var(--accent-primary); background: rgba(124,58,237,0.06); box-shadow: var(--shadow-glow); }
-.dropzone:hover  { border-color: var(--border-strong); }
 
-.dropContent { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
-.dropIcon {
-  width: 72px; height: 72px; border-radius: var(--radius-lg);
-  background: rgba(124,58,237,0.12);
-  display: flex; align-items: center; justify-content: center;
-  color: #a78bfa; margin-bottom: 0.5rem;
+.dropzone:hover .dropIcon,
+.dropzone.active .dropIcon {
+  transform: scale(1.1) translateY(-4px);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.3);
 }
-.dropContent h3 { color: var(--text-primary); }
-.dropContent p  { color: var(--text-muted); font-size: 0.9rem; }
-.browse { color: var(--accent-primary); font-weight: 600; }
-.exts { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
 
-.fileList { margin-top: 1.75rem; }
-.fileListHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.88rem; font-weight: 500; }
+.dropContent h3 {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.dropContent p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.browse {
+  color: var(--accent-primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.exts {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.fileList {
+  margin-top: 2rem;
+}
+
+.fileListHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
 
 .fileItem {
-  display: flex; align-items: center; gap: 1rem;
-  padding: 0.9rem 1rem;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.125rem;
+  background: rgba(12, 8, 26, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--radius-md);
   margin-bottom: 0.5rem;
+  transition: all var(--transition-fast);
 }
-.fileIcon { color: var(--text-muted); flex-shrink: 0; }
-.fileInfo { flex: 1; min-width: 0; }
-.fileName { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fileSize { font-size: 0.76rem; color: var(--text-muted); }
-.progressBar { height: 3px; background: var(--bg-overlay); border-radius: 2px; margin-top: 6px; overflow: hidden; }
-.progressFill { height: 100%; background: linear-gradient(90deg,var(--accent-primary),var(--accent-secondary)); border-radius: 2px; }
-.removeBtn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; transition: color var(--transition-fast), background var(--transition-fast); }
-.removeBtn:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
 
-/* ── Progress Steps ─────────────────────────────────────────── */
+.fileItem:hover {
+  border-color: var(--border-default);
+  background: var(--bg-hover);
+}
+
+.fileIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--bg-overlay);
+  border-radius: 99px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 99px;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeBtn:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Progress Steps ── */
 .progressSteps {
   display: flex;
   align-items: center;
@@ -58,36 +205,38 @@
 }
 
 .stepCircle {
-  width: 22px; height: 22px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.6rem; font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
   border: 2px solid var(--border-default);
   background: var(--bg-overlay);
   color: var(--text-muted);
   flex-shrink: 0;
   transition: all 0.3s;
 }
+
 .stepDone {
-  background: rgba(16,185,129,0.15);
+  background: rgba(16, 185, 129, 0.15);
   border-color: #10b981;
   color: #10b981;
 }
+
 .stepActive {
-  background: rgba(124,58,237,0.15);
+  background: rgba(124, 58, 237, 0.15);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
   animation: stepPulse 1.5s ease infinite;
 }
+
 .stepError {
-  background: rgba(239,68,68,0.15);
+  background: rgba(239, 68, 68, 0.15);
   border-color: #ef4444;
   color: #ef4444;
-}
-
-@keyframes stepPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.3); }
-  50% { box-shadow: 0 0 0 4px rgba(124,58,237,0.1); }
 }
 
 .stepLabel {
@@ -97,14 +246,15 @@
 }
 
 .stepLine {
-  width: 16px; height: 2px;
+  width: 16px;
+  height: 2px;
   background: var(--border-default);
   border-radius: 1px;
   margin: 0 0.15rem;
   flex-shrink: 0;
   transition: background 0.3s;
 }
+
 .stepLineDone {
   background: #10b981;
 }
-

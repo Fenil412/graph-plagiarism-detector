@@ -39,12 +39,18 @@ function Tooltip({ text, show }) {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onCollapseChange }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [hoveredItem, setHoveredItem] = useState(null)
+
+  const handleCollapse = (val) => {
+    setIsCollapsed(val)
+    onCollapseChange?.(val)
+    window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { collapsed: val } }))
+  }
 
   const handleLogout = () => { logout(); navigate('/login') }
 
@@ -74,9 +80,16 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <motion.aside
-        className={`fixed top-0 left-0 h-screen bg-gradient-to-b from-[var(--bg-surface)] to-[var(--bg-base)] border-r border-[var(--border-subtle)] flex flex-col z-[100] overflow-hidden transition-all duration-300 shadow-2xl ${
+        className={`fixed top-0 left-0 h-screen border-r flex flex-col z-[100] overflow-hidden transition-all duration-300 shadow-2xl ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
+        style={{
+          background: 'rgba(6, 4, 16, 0.55)',
+          backdropFilter: 'blur(28px) saturate(1.6)',
+          WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+          borderRight: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '4px 0 40px rgba(0,0,0,0.4), inset -1px 0 0 rgba(255,255,255,0.04)',
+        }}
         animate={{ width: isCollapsed ? '88px' : '280px' }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       >
@@ -228,7 +241,7 @@ export default function Sidebar() {
           <div className="hidden md:block mt-3">
             <div 
               className={`relative flex items-center gap-4 px-4 py-4 rounded-2xl text-[15px] font-semibold transition-all duration-300 group overflow-visible cursor-pointer hover:bg-[var(--bg-hover)] ${isCollapsed ? 'justify-center px-3' : ''}`}
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onClick={() => handleCollapse(!isCollapsed)}
               onMouseEnter={() => isCollapsed && setHoveredItem('toggle')}
               onMouseLeave={() => setHoveredItem(null)}
             >
