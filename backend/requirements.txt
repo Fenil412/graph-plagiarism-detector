@@ -1,6 +1,9 @@
+# Runtime (set separately in Render using runtime.txt)
+# python-3.10.13
+
 # Web Framework
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
 
 # Environment
 python-dotenv==1.0.1
@@ -22,13 +25,15 @@ pydantic-settings==2.2.1
 email-validator==2.1.1
 
 # Graph Algorithms
-networkx==3.3
+networkx==3.2.1
 
 # NLP
 nltk==3.8.1
 
-# Semantic AI / TF-IDF similarity
-scikit-learn==1.4.2
+# ML (FIXED ✅)
+numpy==1.26.4
+scipy==1.11.4
+scikit-learn==1.3.2
 
 # PDF Report
 reportlab==4.1.0
